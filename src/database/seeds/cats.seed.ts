@@ -12,7 +12,7 @@ export const catsSeed: Partial<Cat>[] = [
     slug: 'nala',
     gender: CatGender.FEMALE,
     story:
-      "La Nala va arribar a la gatonera amb només uns dies de vida, rescatada d'un pati després que la seva mare desaparegués. L'hem criada amb biberó i ara és una cadella decidida, juganera i molt xerraire. Li encanta perseguir qualsevol cosa que es mogui i dormir sobre les persones. Busca una família amb paciència i temps per acompanyar-la mentre creix.",
+      "La Nala va arribar a l'associació amb només uns dies de vida, rescatada d'un pati després que la seva mare desaparegués. L'hem criada amb biberó i ara és una cadella decidida, juganera i molt xerraire. Li encanta perseguir qualsevol cosa que es mogui i dormir sobre les persones. Busca una família amb paciència i temps per acompanyar-la mentre creix.",
     entryDate: '2026-10-20',
     healthStatus:
       'Sana. Ha rebut la primera desparasitació i la primera dosi de vacuna. Pendent de completar el calendari vacunal.',
