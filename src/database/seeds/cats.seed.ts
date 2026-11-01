@@ -6,6 +6,9 @@ import {
   Compatibility,
 } from '../../modules/cats/enums';
 
+// Mario i Peach s'adopten junts: comparteixen el mateix grup d'adopció.
+const MARIO_PEACH_ADOPTION_GROUP_ID = '6f1c1a52-3b0e-4d57-9a43-8c2d5e7b9a10';
+
 export const catsSeed: Partial<Cat>[] = [
   {
     name: 'Nala',
@@ -26,7 +29,6 @@ export const catsSeed: Partial<Cat>[] = [
     compatibleWithDogs: Compatibility.YES,
     compatibleWithChildren: Compatibility.UNKNOWN,
     activityLevel: ActivityLevel.HIGH,
-    adoptionFee: '150.00',
     status: CatStatus.AVAILABLE,
     isFeatured: true,
     isUrgent: true,
@@ -34,6 +36,7 @@ export const catsSeed: Partial<Cat>[] = [
   {
     name: 'Mario',
     slug: 'mario',
+    adoptionGroupId: MARIO_PEACH_ADOPTION_GROUP_ID,
     gender: CatGender.MALE,
     story:
       "En Mario i la Peach van ser trobats junts dins d'una caixa de cartró a la porta d'un supermercat. Són inseparables: es renten, juguen i dormen abraçats. En Mario és el més atrevit dels dos, sempre és el primer a explorar una habitació nova. Es porta molt bé amb altres gats i busquem una llar on pugui anar amb la Peach.",
@@ -49,7 +52,6 @@ export const catsSeed: Partial<Cat>[] = [
     compatibleWithDogs: Compatibility.UNKNOWN,
     compatibleWithChildren: Compatibility.UNKNOWN,
     activityLevel: ActivityLevel.MEDIUM,
-    adoptionFee: '180.00',
     status: CatStatus.AVAILABLE,
     isFeatured: true,
     isUrgent: false,
@@ -57,6 +59,7 @@ export const catsSeed: Partial<Cat>[] = [
   {
     name: 'Peach',
     slug: 'peach',
+    adoptionGroupId: MARIO_PEACH_ADOPTION_GROUP_ID,
     gender: CatGender.FEMALE,
     story:
       "La Peach és la parella d'en Mario i la part més dolça del duet. És una mica tímida els primers minuts, però quan agafa confiança no para de fer purrs i demanar carícies. Li agrada mirar per la finestra i jugar amb pilotes de paper. Es mereix una llar tranquil·la, preferiblement junt amb en Mario.",
@@ -72,7 +75,6 @@ export const catsSeed: Partial<Cat>[] = [
     compatibleWithDogs: Compatibility.UNKNOWN,
     compatibleWithChildren: Compatibility.UNKNOWN,
     activityLevel: ActivityLevel.MEDIUM,
-    adoptionFee: '180.00',
     status: CatStatus.AVAILABLE,
     isFeatured: false,
     isUrgent: false,
@@ -96,7 +98,6 @@ export const catsSeed: Partial<Cat>[] = [
     compatibleWithDogs: Compatibility.YES,
     compatibleWithChildren: Compatibility.YES,
     activityLevel: ActivityLevel.LOW,
-    adoptionFee: '200.00',
     status: CatStatus.AVAILABLE,
     isFeatured: false,
     isUrgent: false,
@@ -119,7 +120,6 @@ export const catsSeed: Partial<Cat>[] = [
     compatibleWithDogs: Compatibility.UNKNOWN,
     compatibleWithChildren: Compatibility.UNKNOWN,
     activityLevel: ActivityLevel.MEDIUM,
-    adoptionFee: '220.00',
     status: CatStatus.IN_FOSTER,
     isFeatured: false,
     isUrgent: false,
@@ -142,7 +142,6 @@ export const catsSeed: Partial<Cat>[] = [
     compatibleWithDogs: Compatibility.UNKNOWN,
     compatibleWithChildren: Compatibility.YES,
     activityLevel: ActivityLevel.HIGH,
-    adoptionFee: '250.00',
     status: CatStatus.ADOPTED,
     isFeatured: false,
     isUrgent: false,

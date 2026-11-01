@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -79,14 +80,9 @@ export class Cat {
   })
   activityLevel: ActivityLevel;
 
-  @Column({
-    name: 'adoption_fee',
-    type: 'decimal',
-    precision: 6,
-    scale: 2,
-    nullable: true,
-  })
-  adoptionFee: string | null;
+  @Index()
+  @Column({ name: 'adoption_group_id', type: 'uuid', nullable: true })
+  adoptionGroupId: string | null;
 
   @Column({
     type: 'enum',
