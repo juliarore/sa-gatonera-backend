@@ -5,9 +5,11 @@ import {
   Index,
   JoinTable,
   ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { CatImage } from './cat-image.entity';
 import { Characteristic } from '../characteristics/characteristic.entity';
 import { ActivityLevel, CatGender, CatStatus, Compatibility } from './enums';
 
@@ -109,6 +111,9 @@ export class Cat {
     inverseJoinColumn: { name: 'characteristic_id', referencedColumnName: 'id' },
   })
   characteristics: Characteristic[];
+
+  @OneToMany(() => CatImage, (image) => image.cat)
+  images: CatImage[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
