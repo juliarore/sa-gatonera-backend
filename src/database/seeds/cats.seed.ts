@@ -98,7 +98,7 @@ export const catsSeed: Partial<Cat>[] = [
     compatibleWithDogs: Compatibility.YES,
     compatibleWithChildren: Compatibility.YES,
     activityLevel: ActivityLevel.LOW,
-    status: CatStatus.AVAILABLE,
+    status: CatStatus.RESERVED,
     isFeatured: false,
     isUrgent: false,
   },
