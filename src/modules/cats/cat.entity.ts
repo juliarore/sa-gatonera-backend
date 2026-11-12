@@ -3,9 +3,12 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinTable,
+  ManyToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Characteristic } from '../characteristics/characteristic.entity';
 import { ActivityLevel, CatGender, CatStatus, Compatibility } from './enums';
 
 @Entity('cats')
@@ -96,6 +99,16 @@ export class Cat {
 
   @Column({ name: 'is_urgent', type: 'boolean', default: false })
   isUrgent: boolean;
+
+  @ManyToMany(() => Characteristic, (characteristic) => characteristic.cats, {
+    onDelete: 'CASCADE',
+  })
+  @JoinTable({
+    name: 'cat_characteristics',
+    joinColumn: { name: 'cat_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'characteristic_id', referencedColumnName: 'id' },
+  })
+  characteristics: Characteristic[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
