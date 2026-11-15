@@ -17,6 +17,7 @@ import {
 } from 'class-validator';
 import { ActivityLevel, CatGender, CatStatus, Compatibility } from '../enums';
 
+const NAME_PATTERN = /^[\p{L}][\p{L}\s.'’-]*$/u;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function WhenPresent(): PropertyDecorator {
@@ -36,6 +37,10 @@ export class UpdateCatDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
+  @Matches(NAME_PATTERN, {
+    message:
+      'name can only contain letters, spaces, hyphens, apostrophes and periods',
+  })
   name?: string;
 
   @ApiPropertyOptional({ enum: CatGender })
