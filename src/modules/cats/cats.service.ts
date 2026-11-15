@@ -1,10 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
+import { Characteristic } from '../characteristics/characteristic.entity';
 import { Cat } from './cat.entity';
 import { AdminCatDetailDto } from './dto/admin-cat-detail.dto';
 import { AdminCatsPageDto } from './dto/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin-cats-query.dto';
+import { UpdateCatDto } from './dto/update-cat.dto';
 import { CatGender, CatStatus } from './enums';
 import { getAdoptionFee } from './utils/adoption-fee';
 import { getAgeGroup, getBirthDateRange } from './utils/age-group';
@@ -14,6 +20,8 @@ export class CatsService {
   constructor(
     @InjectRepository(Cat)
     private readonly catsRepository: Repository<Cat>,
+    @InjectRepository(Characteristic)
+    private readonly characteristicsRepository: Repository<Characteristic>,
   ) {}
 
   findAvailable(): Promise<Cat[]> {
@@ -145,5 +153,43 @@ export class CatsService {
       })),
       characteristics,
     };
+  }
+
+  async updateForAdmin(
+    id: string,
+    dto: UpdateCatDto,
+  ): Promise<AdminCatDetailDto> {
+    const cat = await this.catsRepository.findOne({ where: { id } });
+
+    if (!cat) {
+      throw new NotFoundException(`Cat ${id} not found`);
+    }
+
+    const { characteristicIds, ...fields } = dto;
+    Object.assign(cat, fields);
+
+    if (characteristicIds !== undefined) {
+      const characteristics = characteristicIds.length
+        ? await this.characteristicsRepository.findBy({
+            id: In(characteristicIds),
+          })
+        : [];
+      const foundIds = new Set(characteristics.map(({ id }) => id));
+      const missingIds = characteristicIds.filter(
+        (item) => !foundIds.has(item),
+      );
+
+      if (missingIds.length > 0) {
+        throw new BadRequestException(
+          `Unknown characteristic ids: ${missingIds.join(', ')}`,
+        );
+      }
+
+      cat.characteristics = characteristics;
+    }
+
+    await this.catsRepository.save(cat);
+
+    return this.findOneForAdmin(id);
   }
 }
