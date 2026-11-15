@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { Cat } from './cat.entity';
+import { AdminCatDetailDto } from './dto/admin-cat-detail.dto';
 import { AdminCatsPageDto } from './dto/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin-cats-query.dto';
-import { CatStatus } from './enums';
+import { CatGender, CatStatus } from './enums';
+import { getAdoptionFee } from './utils/adoption-fee';
 import { getAgeGroup, getBirthDateRange } from './utils/age-group';
 
 @Injectable()
@@ -79,6 +81,69 @@ export class CatsService {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async findOneForAdmin(id: string): Promise<AdminCatDetailDto> {
+    const cat = await this.catsRepository.findOne({
+      where: { id },
+      relations: { characteristics: true },
+    });
+
+    if (!cat) {
+      throw new NotFoundException(`Cat ${id} not found`);
+    }
+
+    const adoptionGroupMates = cat.adoptionGroupId
+      ? await this.catsRepository.find({
+          select: { id: true, name: true },
+          where: { adoptionGroupId: cat.adoptionGroupId, id: Not(cat.id) },
+          order: { name: 'ASC' },
+        })
+      : [];
+
+    const characteristics = cat.characteristics
+      .map((characteristic) => ({
+        id: characteristic.id,
+        code: characteristic.code,
+        label:
+          cat.gender === CatGender.FEMALE
+            ? characteristic.labelFeminine
+            : characteristic.labelMasculine,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'ca'));
+
+    return {
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      gender: cat.gender,
+      story: cat.story,
+      entryDate: cat.entryDate,
+      healthStatus: cat.healthStatus,
+      specialNeeds: cat.specialNeeds,
+      birthDate: cat.birthDate,
+      birthDateIsEstimated: cat.birthDateIsEstimated,
+      vaccinated: cat.vaccinated,
+      sterilized: cat.sterilized,
+      compatibleWithCats: cat.compatibleWithCats,
+      compatibleWithDogs: cat.compatibleWithDogs,
+      compatibleWithChildren: cat.compatibleWithChildren,
+      activityLevel: cat.activityLevel,
+      status: cat.status,
+      isFeatured: cat.isFeatured,
+      isUrgent: cat.isUrgent,
+      adoptionGroupId: cat.adoptionGroupId,
+      createdAt: cat.createdAt,
+      updatedAt: cat.updatedAt,
+      adoptionFee: getAdoptionFee(cat),
+      ageGroup: getAgeGroup(cat.birthDate),
+      isVisible: cat.status === CatStatus.AVAILABLE,
+      adoptionGroupMates: adoptionGroupMates.map(({ id, name }) => ({
+        id,
+        name,
+      })),
+      characteristics,
     };
   }
 }
