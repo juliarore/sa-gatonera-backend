@@ -11,7 +11,7 @@ export class CatsController {
   @Get()
   @ApiOperation({
     summary:
-      'Llista els gats disponibles, primer els urgents i després els més antics',
+      'Lists available cats, urgent ones first, then the longest-waiting',
   })
   findAll(): Promise<Cat[]> {
     return this.catsService.findAvailable();

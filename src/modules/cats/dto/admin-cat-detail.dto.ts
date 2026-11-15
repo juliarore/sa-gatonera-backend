@@ -24,7 +24,7 @@ export class CatCharacteristicDto {
 
   @ApiProperty({
     example: 'Carinyosa',
-    description: 'Etiqueta segons el gènere del gat',
+    description: "Label matching the cat's gender",
   })
   label: string;
 }
@@ -96,13 +96,15 @@ export class AdminCatDetailDto {
   @ApiProperty()
   updatedAt: Date;
 
-  @ApiProperty({ description: "Cost d'adopció en euros" })
+  @ApiProperty({ description: 'Adoption fee in euros' })
   adoptionFee: number;
 
   @ApiProperty({ enum: AgeGroup })
   ageGroup: AgeGroup;
 
-  @ApiProperty({ description: 'true si el gat està disponible (available)' })
+  @ApiProperty({
+    description: 'True if the cat is available (status available)',
+  })
   isVisible: boolean;
 
   @ApiProperty({ type: [AdoptionGroupMateDto] })

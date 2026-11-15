@@ -29,7 +29,9 @@ export class AdminCatListItemDto {
   @ApiProperty({ enum: AgeGroup })
   ageGroup: AgeGroup;
 
-  @ApiProperty({ description: 'true si el gat està disponible (available)' })
+  @ApiProperty({
+    description: 'True if the cat is available (status available)',
+  })
   isVisible: boolean;
 }
 

@@ -5,9 +5,9 @@ export const YOUNG_MAX_MONTHS = 24;
 export const ADULT_MAX_MONTHS = 7 * 12;
 
 export interface BirthDateRange {
-  /** El gat ha de néixer estrictament després d'aquesta data (YYYY-MM-DD). */
+  /** The cat must be born strictly after this date (YYYY-MM-DD). */
   after?: string;
-  /** El gat ha de néixer en aquesta data o abans (YYYY-MM-DD). */
+  /** The cat must be born on or before this date (YYYY-MM-DD). */
   onOrBefore?: string;
 }
 
@@ -15,7 +15,7 @@ function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** Data de fa `months` mesos respecte a `now`, ajustant el dia si el mes destí és més curt. */
+/** Date `months` months before `now`, clamping the day if the target month is shorter. */
 function monthsAgo(months: number, now: Date): string {
   const lastDayOfTargetMonth = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - months + 1, 0),
@@ -31,7 +31,7 @@ function monthsAgo(months: number, now: Date): string {
   );
 }
 
-/** Rang de birth_date que correspon a cada grup d'edat. */
+/** birth_date range for each age group. */
 export function getBirthDateRange(
   group: AgeGroup,
   now: Date = new Date(),
@@ -52,7 +52,7 @@ export function getBirthDateRange(
   }
 }
 
-/** Grup d'edat d'un gat a partir de la seva data de naixement (YYYY-MM-DD). */
+/** Age group of a cat from its birth date (YYYY-MM-DD). */
 export function getAgeGroup(birthDate: string, now: Date = new Date()): AgeGroup {
   const isInRange = ({ after, onOrBefore }: BirthDateRange) =>
     (after === undefined || birthDate > after) &&

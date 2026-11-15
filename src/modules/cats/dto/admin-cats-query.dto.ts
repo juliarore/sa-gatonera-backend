@@ -5,7 +5,7 @@ import { AgeGroup, CatStatus } from '../enums';
 
 export class AdminCatsQueryDto {
   @ApiPropertyOptional({
-    description: 'Cerca per nom (parcial, sense distingir majúscules)',
+    description: 'Search by name (partial, case-insensitive)',
   })
   @IsOptional()
   @Transform(({ value }: { value: unknown }) =>
@@ -22,7 +22,7 @@ export class AdminCatsQueryDto {
   @ApiPropertyOptional({
     enum: AgeGroup,
     description:
-      'kitten < 12 mesos, young 12-24 mesos, adult 2-7 anys, senior >= 7 anys',
+      'kitten: under 12 months, young: 12 to 24 months, adult: 2 to 7 years, senior: 7 years or more',
   })
   @IsOptional()
   @IsEnum(AgeGroup)
