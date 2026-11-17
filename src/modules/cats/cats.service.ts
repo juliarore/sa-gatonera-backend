@@ -1,27 +1,32 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Not, Repository } from 'typeorm';
+import { randomUUID } from 'node:crypto';
+import { In, IsNull, Not, Repository } from 'typeorm';
 import { Characteristic } from '../characteristics/characteristic.entity';
 import { Cat } from './cat.entity';
-import { AdminCatDetailDto } from './dto/admin-cat-detail.dto';
+import {
+  AdminCatDetailDto,
+  AdoptionGroupMateDto,
+} from './dto/admin-cat-detail.dto';
 import { AdminCatsPageDto } from './dto/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin-cats-query.dto';
 import { UpdateCatDto } from './dto/update-cat.dto';
-import { CatGender, CatStatus } from './enums';
+import { CatErrorCode, CatGender, CatStatus } from './enums';
 import { getAdoptionFee } from './utils/adoption-fee';
 import { getAgeGroup, getBirthDateRange } from './utils/age-group';
+
+const MAX_FEATURED_CATS = 3;
 
 @Injectable()
 export class CatsService {
   constructor(
     @InjectRepository(Cat)
     private readonly catsRepository: Repository<Cat>,
-    @InjectRepository(Characteristic)
-    private readonly characteristicsRepository: Repository<Characteristic>,
   ) {}
 
   findAvailable(): Promise<Cat[]> {
@@ -159,37 +164,167 @@ export class CatsService {
     id: string,
     dto: UpdateCatDto,
   ): Promise<AdminCatDetailDto> {
+    await this.catsRepository.manager.transaction(async (manager) => {
+      const cats = manager.getRepository(Cat);
+      const cat = await cats.findOne({ where: { id } });
+
+      if (!cat) {
+        throw new NotFoundException(`Cat ${id} not found`);
+      }
+
+      const { characteristicIds, pairedCatId, ...fields } = dto;
+
+      if (fields.isFeatured === true && !cat.isFeatured) {
+        const featured = await cats.countBy({
+          isFeatured: true,
+          id: Not(id),
+        });
+
+        if (featured >= MAX_FEATURED_CATS) {
+          throw new ConflictException({
+            statusCode: 409,
+            message: `Only ${MAX_FEATURED_CATS} cats can be featured on the home page. Remove one before adding another.`,
+            code: CatErrorCode.FEATURED_LIMIT_REACHED,
+          });
+        }
+      }
+
+      Object.assign(cat, fields);
+
+      if (characteristicIds !== undefined) {
+        const characteristics = await manager
+          .getRepository(Characteristic)
+          .findBy({ id: In(characteristicIds) });
+        const foundIds = new Set(characteristics.map(({ id }) => id));
+        const missingIds = characteristicIds.filter(
+          (item) => !foundIds.has(item),
+        );
+
+        if (missingIds.length > 0) {
+          throw new BadRequestException({
+            statusCode: 400,
+            message: `Unknown characteristic ids: ${missingIds.join(', ')}`,
+            code: CatErrorCode.UNKNOWN_CHARACTERISTICS,
+          });
+        }
+
+        cat.characteristics = characteristics;
+      }
+
+      if (pairedCatId !== undefined) {
+        await this.updatePairing(cats, cat, pairedCatId);
+      }
+
+      await cats.save(cat);
+    });
+
+    return this.findOneForAdmin(id);
+  }
+
+  async findPairedCatOptions(id: string): Promise<AdoptionGroupMateDto[]> {
     const cat = await this.catsRepository.findOne({ where: { id } });
 
     if (!cat) {
       throw new NotFoundException(`Cat ${id} not found`);
     }
 
-    const { characteristicIds, ...fields } = dto;
-    Object.assign(cat, fields);
+    const candidate = { id: Not(id), status: Not(CatStatus.ADOPTED) };
 
-    if (characteristicIds !== undefined) {
-      const characteristics = characteristicIds.length
-        ? await this.characteristicsRepository.findBy({
-            id: In(characteristicIds),
-          })
-        : [];
-      const foundIds = new Set(characteristics.map(({ id }) => id));
-      const missingIds = characteristicIds.filter(
-        (item) => !foundIds.has(item),
-      );
+    return this.catsRepository.find({
+      select: { id: true, name: true },
+      where: [
+        { ...candidate, adoptionGroupId: IsNull() },
+        { ...candidate, adoptionGroupId: cat.adoptionGroupId ?? IsNull() },
+      ],
+      order: { name: 'ASC' },
+    });
+  }
 
-      if (missingIds.length > 0) {
-        throw new BadRequestException(
-          `Unknown characteristic ids: ${missingIds.join(', ')}`,
-        );
-      }
-
-      cat.characteristics = characteristics;
+  private async updatePairing(
+    cats: Repository<Cat>,
+    cat: Cat,
+    pairedCatId: string | null,
+  ): Promise<void> {
+    if (pairedCatId === null) {
+      await this.releaseGroup(cats, cat);
+      return;
     }
 
-    await this.catsRepository.save(cat);
+    const partnerId = pairedCatId.toLowerCase();
 
-    return this.findOneForAdmin(id);
+    if (partnerId === cat.id) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: 'A cat cannot be paired with itself',
+        code: CatErrorCode.PAIRED_CAT_SELF,
+      });
+    }
+
+    const partner = await cats.findOne({ where: { id: partnerId } });
+
+    if (!partner) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: `Cat ${partnerId} not found`,
+        code: CatErrorCode.PAIRED_CAT_NOT_FOUND,
+      });
+    }
+
+    if (partner.status === CatStatus.ADOPTED) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: `${partner.name} is already adopted`,
+        code: CatErrorCode.PAIRED_CAT_ADOPTED,
+      });
+    }
+
+    if (
+      cat.adoptionGroupId &&
+      partner.adoptionGroupId === cat.adoptionGroupId
+    ) {
+      return;
+    }
+
+    if (partner.adoptionGroupId) {
+      const other = await cats.findOne({
+        where: {
+          adoptionGroupId: partner.adoptionGroupId,
+          id: Not(partner.id),
+        },
+      });
+
+      if (other) {
+        throw new ConflictException({
+          statusCode: 409,
+          message: `${partner.name} already has a joint adoption with ${other.name}. Separate them first.`,
+          code: CatErrorCode.PAIRED_CAT_TAKEN,
+        });
+      }
+    }
+
+    await this.releaseGroup(cats, cat);
+
+    const adoptionGroupId = randomUUID();
+    cat.adoptionGroupId = adoptionGroupId;
+    partner.adoptionGroupId = adoptionGroupId;
+    await cats.save(partner);
+  }
+
+  private async releaseGroup(cats: Repository<Cat>, cat: Cat): Promise<void> {
+    if (!cat.adoptionGroupId) {
+      return;
+    }
+
+    const mates = await cats.findBy({
+      adoptionGroupId: cat.adoptionGroupId,
+      id: Not(cat.id),
+    });
+
+    for (const mate of mates) {
+      mate.adoptionGroupId = null;
+    }
+
+    await cats.save(mates);
+    cat.adoptionGroupId = null;
   }
 }

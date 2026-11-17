@@ -9,13 +9,17 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { CatsService } from './cats.service';
-import { AdminCatDetailDto } from './dto/admin-cat-detail.dto';
+import {
+  AdminCatDetailDto,
+  AdoptionGroupMateDto,
+} from './dto/admin-cat-detail.dto';
 import { AdminCatsPageDto } from './dto/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin-cats-query.dto';
 import { UpdateCatDto } from './dto/update-cat.dto';
@@ -44,12 +48,33 @@ export class AdminCatsController {
     return this.catsService.findOneForAdmin(id);
   }
 
+  @Get(':id/paired-cat-options')
+  @ApiOperation({
+    summary:
+      'Cats that can be paired for joint adoption with this cat, ordered by name',
+  })
+  @ApiOkResponse({ type: [AdoptionGroupMateDto] })
+  @ApiNotFoundResponse({ description: 'No cat exists with this id' })
+  findPairedCatOptions(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<AdoptionGroupMateDto[]> {
+    return this.catsService.findPairedCatOptions(id);
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Partially updates a cat from the back office' })
   @ApiOkResponse({ type: AdminCatDetailDto })
-  @ApiNotFoundResponse({ description: 'No cat exists with this id' })
+  @ApiNotFoundResponse({
+    description:
+      'No cat exists with this id, or code PAIRED_CAT_NOT_FOUND if the paired cat does not exist',
+  })
   @ApiBadRequestResponse({
-    description: 'Invalid id, invalid body or unknown characteristic ids',
+    description:
+      'Invalid id or body. Business rule errors include a code: UNKNOWN_CHARACTERISTICS, PAIRED_CAT_ADOPTED, PAIRED_CAT_SELF',
+  })
+  @ApiConflictResponse({
+    description:
+      'Business rule errors include a code: FEATURED_LIMIT_REACHED, PAIRED_CAT_TAKEN',
   })
   update(
     @Param('id', ParseUUIDPipe) id: string,

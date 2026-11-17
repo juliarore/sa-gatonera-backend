@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   ArrayMaxSize,
+  ArrayMinSize,
   ArrayUnique,
   IsArray,
   IsBoolean,
@@ -145,14 +146,27 @@ export class UpdateCatDto {
   @ApiPropertyOptional({
     type: [String],
     format: 'uuid',
+    minItems: 1,
     maxItems: 12,
     uniqueItems: true,
     description: 'Replaces the full list of characteristics',
   })
   @WhenPresent()
   @IsArray()
+  @ArrayMinSize(1, { message: 'at least one characteristic is required' })
   @ArrayMaxSize(12)
   @ArrayUnique()
   @IsUUID('all', { each: true })
   characteristicIds?: string[];
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    nullable: true,
+    type: String,
+    description:
+      'Id of the cat to adopt jointly with, or null to remove the joint adoption',
+  })
+  @IsOptional()
+  @IsUUID()
+  pairedCatId?: string | null;
 }
