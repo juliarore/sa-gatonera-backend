@@ -1,0 +1,25 @@
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Characteristic } from './characteristic.entity';
+import { CharacteristicDto } from './dto/characteristic.dto';
+
+@Injectable()
+export class CharacteristicsService {
+  constructor(
+    @InjectRepository(Characteristic)
+    private readonly characteristicsRepository: Repository<Characteristic>,
+  ) {}
+
+  async findAll(): Promise<CharacteristicDto[]> {
+    return this.characteristicsRepository.find({
+      select: {
+        id: true,
+        code: true,
+        labelMasculine: true,
+        labelFeminine: true,
+      },
+      order: { labelMasculine: 'ASC' },
+    });
+  }
+}
