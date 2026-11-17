@@ -33,6 +33,21 @@ export class AdminCatListItemDto {
     description: 'True if the cat is available (status available)',
   })
   isVisible: boolean;
+
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    example: '/uploads/cats/nala.jpeg',
+    description: 'Relative URL of the cover image (display order 1)',
+  })
+  coverImageUrl: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'Alternative text of the cover image',
+  })
+  coverImageAlt: string | null;
 }
 
 export class AdminCatsPageDto {

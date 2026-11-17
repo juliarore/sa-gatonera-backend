@@ -29,6 +29,23 @@ export class CatCharacteristicDto {
   label: string;
 }
 
+export class CatImageDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+
+  @ApiProperty({
+    example: '/uploads/cats/nala.jpeg',
+    description: 'Relative URL of the image',
+  })
+  imageUrl: string;
+
+  @ApiProperty()
+  altText: string;
+
+  @ApiProperty({ minimum: 1, description: 'Display order, 1 is the cover' })
+  displayOrder: number;
+}
+
 export class AdminCatDetailDto {
   @ApiProperty({ format: 'uuid' })
   id: string;
@@ -112,4 +129,7 @@ export class AdminCatDetailDto {
 
   @ApiProperty({ type: [CatCharacteristicDto] })
   characteristics: CatCharacteristicDto[];
+
+  @ApiProperty({ type: [CatImageDto] })
+  images: CatImageDto[];
 }

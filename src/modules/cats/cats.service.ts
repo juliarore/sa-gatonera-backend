@@ -50,7 +50,10 @@ export class CatsService {
         'cat.status',
         'cat.isUrgent',
         'cat.entryDate',
+        'cat.createdAt',
       ])
+      .leftJoin('cat.images', 'cover', 'cover.displayOrder = 1')
+      .addSelect(['cover.id', 'cover.imageUrl', 'cover.altText'])
       .orderBy('cat.entryDate', 'DESC')
       .addOrderBy('cat.createdAt', 'DESC')
       .skip((page - 1) * limit)
@@ -89,6 +92,8 @@ export class CatsService {
         entryDate: cat.entryDate,
         ageGroup: getAgeGroup(cat.birthDate),
         isVisible: cat.status === CatStatus.AVAILABLE,
+        coverImageUrl: cat.images[0]?.imageUrl ?? null,
+        coverImageAlt: cat.images[0]?.altText ?? null,
       })),
       total,
       page,
@@ -100,7 +105,8 @@ export class CatsService {
   async findOneForAdmin(id: string): Promise<AdminCatDetailDto> {
     const cat = await this.catsRepository.findOne({
       where: { id },
-      relations: { characteristics: true },
+      relations: { characteristics: true, images: true },
+      order: { images: { displayOrder: 'ASC' } },
     });
 
     if (!cat) {
@@ -157,6 +163,12 @@ export class CatsService {
         name,
       })),
       characteristics,
+      images: cat.images.map(({ id, imageUrl, altText, displayOrder }) => ({
+        id,
+        imageUrl,
+        altText,
+        displayOrder,
+      })),
     };
   }
 
