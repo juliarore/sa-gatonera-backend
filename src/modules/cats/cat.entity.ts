@@ -108,7 +108,10 @@ export class Cat {
   @JoinTable({
     name: 'cat_characteristics',
     joinColumn: { name: 'cat_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'characteristic_id', referencedColumnName: 'id' },
+    inverseJoinColumn: {
+      name: 'characteristic_id',
+      referencedColumnName: 'id',
+    },
   })
   characteristics: Characteristic[];
 

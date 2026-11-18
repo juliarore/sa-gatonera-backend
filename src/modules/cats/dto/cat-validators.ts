@@ -10,9 +10,13 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Length,
   Matches,
   MaxLength,
 } from 'class-validator';
+
+export const ALT_TEXT_MIN_LENGTH = 10;
+export const ALT_TEXT_MAX_LENGTH = 250;
 
 const NAME_PATTERN = /^[\p{L}][\p{L}\s.'’-]*$/u;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -34,6 +38,15 @@ export function IsCatName(): PropertyDecorator {
     Matches(NAME_PATTERN, {
       message:
         'name can only contain letters, spaces, hyphens, apostrophes and periods',
+    }),
+  );
+}
+
+export function IsAltText(): PropertyDecorator {
+  return applyDecorators(
+    IsString(),
+    Length(ALT_TEXT_MIN_LENGTH, ALT_TEXT_MAX_LENGTH, {
+      message: `altText must be between ${ALT_TEXT_MIN_LENGTH} and ${ALT_TEXT_MAX_LENGTH} characters`,
     }),
   );
 }

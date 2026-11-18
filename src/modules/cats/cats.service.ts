@@ -21,6 +21,8 @@ import { UpdateCatDto } from './dto/update-cat.dto';
 import { CatErrorCode, CatGender, CatStatus } from './enums';
 import { getAdoptionFee } from './utils/adoption-fee';
 import { getAgeGroup, getBirthDateRange } from './utils/age-group';
+import { toCatImageDto } from './utils/cat-image-dto';
+import { coded } from './utils/coded-exception';
 import { slugify } from './utils/slug';
 
 const MAX_FEATURED_CATS = 3;
@@ -168,12 +170,7 @@ export class CatsService {
         name,
       })),
       characteristics,
-      images: cat.images.map(({ id, imageUrl, altText, displayOrder }) => ({
-        id,
-        imageUrl,
-        altText,
-        displayOrder,
-      })),
+      images: cat.images.map(toCatImageDto),
     };
   }
 
@@ -297,10 +294,7 @@ export class CatsService {
 
   async getFeaturedSummary(): Promise<FeaturedSummaryDto> {
     return {
-      count: await this.catsRepository.countBy({
-        isFeatured: true,
-        status: CatStatus.AVAILABLE,
-      }),
+      count: await this.countFeatured(this.catsRepository),
       max: MAX_FEATURED_CATS,
     };
   }
@@ -316,11 +310,11 @@ export class CatsService {
     }
 
     if (cat.status !== CatStatus.AVAILABLE) {
-      throw new ConflictException({
-        statusCode: 409,
-        message: 'Only cats that are available for adoption can be featured.',
-        code: CatErrorCode.FEATURED_NOT_AVAILABLE,
-      });
+      throw coded(
+        ConflictException,
+        'Only cats that are available for adoption can be featured.',
+        CatErrorCode.FEATURED_NOT_AVAILABLE,
+      );
     }
 
     if (!alreadyCounted) {
@@ -332,19 +326,24 @@ export class CatsService {
     cats: Repository<Cat>,
     exceptId?: string,
   ): Promise<void> {
-    const featured = await cats.countBy({
+    if ((await this.countFeatured(cats, exceptId)) >= MAX_FEATURED_CATS) {
+      throw coded(
+        ConflictException,
+        `Only ${MAX_FEATURED_CATS} cats can be featured on the home page. Remove one before adding another.`,
+        CatErrorCode.FEATURED_LIMIT_REACHED,
+      );
+    }
+  }
+
+  private countFeatured(
+    cats: Repository<Cat>,
+    exceptId?: string,
+  ): Promise<number> {
+    return cats.countBy({
       isFeatured: true,
       status: CatStatus.AVAILABLE,
       ...(exceptId && { id: Not(exceptId) }),
     });
-
-    if (featured >= MAX_FEATURED_CATS) {
-      throw new ConflictException({
-        statusCode: 409,
-        message: `Only ${MAX_FEATURED_CATS} cats can be featured on the home page. Remove one before adding another.`,
-        code: CatErrorCode.FEATURED_LIMIT_REACHED,
-      });
-    }
   }
 
   private async findCharacteristics(
@@ -358,11 +357,11 @@ export class CatsService {
     const missingIds = characteristicIds.filter((id) => !foundIds.has(id));
 
     if (missingIds.length > 0) {
-      throw new BadRequestException({
-        statusCode: 400,
-        message: `Unknown characteristic ids: ${missingIds.join(', ')}`,
-        code: CatErrorCode.UNKNOWN_CHARACTERISTICS,
-      });
+      throw coded(
+        BadRequestException,
+        `Unknown characteristic ids: ${missingIds.join(', ')}`,
+        CatErrorCode.UNKNOWN_CHARACTERISTICS,
+      );
     }
 
     return characteristics;
@@ -395,29 +394,29 @@ export class CatsService {
     const partnerId = pairedCatId.toLowerCase();
 
     if (partnerId === cat.id) {
-      throw new BadRequestException({
-        statusCode: 400,
-        message: 'A cat cannot be paired with itself',
-        code: CatErrorCode.PAIRED_CAT_SELF,
-      });
+      throw coded(
+        BadRequestException,
+        'A cat cannot be paired with itself',
+        CatErrorCode.PAIRED_CAT_SELF,
+      );
     }
 
     const partner = await cats.findOne({ where: { id: partnerId } });
 
     if (!partner) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: `Cat ${partnerId} not found`,
-        code: CatErrorCode.PAIRED_CAT_NOT_FOUND,
-      });
+      throw coded(
+        NotFoundException,
+        `Cat ${partnerId} not found`,
+        CatErrorCode.PAIRED_CAT_NOT_FOUND,
+      );
     }
 
     if (partner.status === CatStatus.ADOPTED) {
-      throw new BadRequestException({
-        statusCode: 400,
-        message: `${partner.name} is already adopted`,
-        code: CatErrorCode.PAIRED_CAT_ADOPTED,
-      });
+      throw coded(
+        BadRequestException,
+        `${partner.name} is already adopted`,
+        CatErrorCode.PAIRED_CAT_ADOPTED,
+      );
     }
 
     if (
@@ -436,11 +435,11 @@ export class CatsService {
       });
 
       if (other) {
-        throw new ConflictException({
-          statusCode: 409,
-          message: `${partner.name} already has a joint adoption with ${other.name}. Separate them first.`,
-          code: CatErrorCode.PAIRED_CAT_TAKEN,
-        });
+        throw coded(
+          ConflictException,
+          `${partner.name} already has a joint adoption with ${other.name}. Separate them first.`,
+          CatErrorCode.PAIRED_CAT_TAKEN,
+        );
       }
     }
 
@@ -457,16 +456,10 @@ export class CatsService {
       return;
     }
 
-    const mates = await cats.findBy({
-      adoptionGroupId: cat.adoptionGroupId,
-      id: Not(cat.id),
-    });
-
-    for (const mate of mates) {
-      mate.adoptionGroupId = null;
-    }
-
-    await cats.save(mates);
+    await cats.update(
+      { adoptionGroupId: cat.adoptionGroupId, id: Not(cat.id) },
+      { adoptionGroupId: null },
+    );
     cat.adoptionGroupId = null;
   }
 }

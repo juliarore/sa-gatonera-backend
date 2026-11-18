@@ -53,7 +53,10 @@ export function getBirthDateRange(
 }
 
 /** Age group of a cat from its birth date (YYYY-MM-DD). */
-export function getAgeGroup(birthDate: string, now: Date = new Date()): AgeGroup {
+export function getAgeGroup(
+  birthDate: string,
+  now: Date = new Date(),
+): AgeGroup {
   const isInRange = ({ after, onOrBefore }: BirthDateRange) =>
     (after === undefined || birthDate > after) &&
     (onOrBefore === undefined || birthDate <= onOrBefore);
