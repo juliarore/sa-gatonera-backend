@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
-import { In, IsNull, Not, Repository } from 'typeorm';
+import { EntityManager, In, IsNull, Not, Repository } from 'typeorm';
 import { Characteristic } from '../characteristics/characteristic.entity';
 import { Cat } from './cat.entity';
 import {
@@ -15,10 +15,12 @@ import {
 } from './dto/admin-cat-detail.dto';
 import { AdminCatsPageDto } from './dto/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin-cats-query.dto';
+import { CreateCatDto } from './dto/create-cat.dto';
 import { UpdateCatDto } from './dto/update-cat.dto';
 import { CatErrorCode, CatGender, CatStatus } from './enums';
 import { getAdoptionFee } from './utils/adoption-fee';
 import { getAgeGroup, getBirthDateRange } from './utils/age-group';
+import { slugify } from './utils/slug';
 
 const MAX_FEATURED_CATS = 3;
 
@@ -172,6 +174,50 @@ export class CatsService {
     };
   }
 
+  async createForAdmin(dto: CreateCatDto): Promise<AdminCatDetailDto> {
+    const id = await this.catsRepository.manager.transaction(
+      async (manager) => {
+        const cats = manager.getRepository(Cat);
+        const {
+          characteristicIds,
+          pairedCatId,
+          status,
+          isFeatured,
+          isUrgent,
+          ...fields
+        } = dto;
+
+        if (isFeatured) {
+          await this.assertFeaturedLimit(cats);
+        }
+
+        const characteristics = await this.findCharacteristics(
+          manager,
+          characteristicIds,
+        );
+        const cat = await cats.save(
+          cats.create({
+            ...fields,
+            slug: await this.generateSlug(cats, fields.name),
+            status: status ?? CatStatus.AVAILABLE,
+            isFeatured: isFeatured ?? false,
+            isUrgent: isUrgent ?? false,
+            characteristics,
+          }),
+        );
+
+        if (pairedCatId) {
+          await this.updatePairing(cats, cat, pairedCatId);
+          await cats.save(cat);
+        }
+
+        return cat.id;
+      },
+    );
+
+    return this.findOneForAdmin(id);
+  }
+
   async updateForAdmin(
     id: string,
     dto: UpdateCatDto,
@@ -187,40 +233,16 @@ export class CatsService {
       const { characteristicIds, pairedCatId, ...fields } = dto;
 
       if (fields.isFeatured === true && !cat.isFeatured) {
-        const featured = await cats.countBy({
-          isFeatured: true,
-          id: Not(id),
-        });
-
-        if (featured >= MAX_FEATURED_CATS) {
-          throw new ConflictException({
-            statusCode: 409,
-            message: `Only ${MAX_FEATURED_CATS} cats can be featured on the home page. Remove one before adding another.`,
-            code: CatErrorCode.FEATURED_LIMIT_REACHED,
-          });
-        }
+        await this.assertFeaturedLimit(cats, id);
       }
 
       Object.assign(cat, fields);
 
       if (characteristicIds !== undefined) {
-        const characteristics = await manager
-          .getRepository(Characteristic)
-          .findBy({ id: In(characteristicIds) });
-        const foundIds = new Set(characteristics.map(({ id }) => id));
-        const missingIds = characteristicIds.filter(
-          (item) => !foundIds.has(item),
+        cat.characteristics = await this.findCharacteristics(
+          manager,
+          characteristicIds,
         );
-
-        if (missingIds.length > 0) {
-          throw new BadRequestException({
-            statusCode: 400,
-            message: `Unknown characteristic ids: ${missingIds.join(', ')}`,
-            code: CatErrorCode.UNKNOWN_CHARACTERISTICS,
-          });
-        }
-
-        cat.characteristics = characteristics;
       }
 
       if (pairedCatId !== undefined) {
@@ -250,6 +272,59 @@ export class CatsService {
       ],
       order: { name: 'ASC' },
     });
+  }
+
+  private async assertFeaturedLimit(
+    cats: Repository<Cat>,
+    exceptId?: string,
+  ): Promise<void> {
+    const featured = await cats.countBy({
+      isFeatured: true,
+      ...(exceptId && { id: Not(exceptId) }),
+    });
+
+    if (featured >= MAX_FEATURED_CATS) {
+      throw new ConflictException({
+        statusCode: 409,
+        message: `Only ${MAX_FEATURED_CATS} cats can be featured on the home page. Remove one before adding another.`,
+        code: CatErrorCode.FEATURED_LIMIT_REACHED,
+      });
+    }
+  }
+
+  private async findCharacteristics(
+    manager: EntityManager,
+    characteristicIds: string[],
+  ): Promise<Characteristic[]> {
+    const characteristics = await manager
+      .getRepository(Characteristic)
+      .findBy({ id: In(characteristicIds) });
+    const foundIds = new Set(characteristics.map(({ id }) => id));
+    const missingIds = characteristicIds.filter((id) => !foundIds.has(id));
+
+    if (missingIds.length > 0) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: `Unknown characteristic ids: ${missingIds.join(', ')}`,
+        code: CatErrorCode.UNKNOWN_CHARACTERISTICS,
+      });
+    }
+
+    return characteristics;
+  }
+
+  private async generateSlug(
+    cats: Repository<Cat>,
+    name: string,
+  ): Promise<string> {
+    const base = slugify(name);
+    let slug = base;
+
+    for (let suffix = 2; await cats.existsBy({ slug }); suffix++) {
+      slug = `${base}-${suffix}`;
+    }
+
+    return slug;
   }
 
   private async updatePairing(

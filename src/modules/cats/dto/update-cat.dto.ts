@@ -1,47 +1,28 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
 import {
-  ArrayMaxSize,
-  ArrayMinSize,
-  ArrayUnique,
-  IsArray,
   IsBoolean,
   IsEnum,
-  IsISO8601,
-  IsNotEmpty,
   IsOptional,
-  IsString,
   IsUUID,
-  Matches,
-  MaxLength,
   ValidateIf,
 } from 'class-validator';
 import { ActivityLevel, CatGender, CatStatus, Compatibility } from '../enums';
-
-const NAME_PATTERN = /^[\p{L}][\p{L}\s.'’-]*$/u;
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+import {
+  IsCatDate,
+  IsCatName,
+  IsCharacteristicIds,
+  IsRequiredText,
+  NullableText,
+} from './cat-validators';
 
 function WhenPresent(): PropertyDecorator {
   return ValidateIf((_object, value) => value !== undefined);
 }
 
-function Trim(): PropertyDecorator {
-  return Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? value.trim() : value,
-  );
-}
-
 export class UpdateCatDto {
   @ApiPropertyOptional({ maxLength: 100, example: 'Nala' })
   @WhenPresent()
-  @Trim()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  @Matches(NAME_PATTERN, {
-    message:
-      'name can only contain letters, spaces, hyphens, apostrophes and periods',
-  })
+  @IsCatName()
   name?: string;
 
   @ApiPropertyOptional({ enum: CatGender })
@@ -51,9 +32,7 @@ export class UpdateCatDto {
 
   @ApiPropertyOptional()
   @WhenPresent()
-  @Trim()
-  @IsString()
-  @IsNotEmpty()
+  @IsRequiredText()
   story?: string;
 
   @ApiPropertyOptional({
@@ -61,8 +40,7 @@ export class UpdateCatDto {
     description: 'Format yyyy-mm-dd',
   })
   @WhenPresent()
-  @Matches(DATE_PATTERN, { message: 'entryDate must be in yyyy-mm-dd format' })
-  @IsISO8601({ strict: true })
+  @IsCatDate('entryDate')
   entryDate?: string;
 
   @ApiPropertyOptional({
@@ -70,8 +48,7 @@ export class UpdateCatDto {
     description: 'Format yyyy-mm-dd',
   })
   @WhenPresent()
-  @Matches(DATE_PATTERN, { message: 'birthDate must be in yyyy-mm-dd format' })
-  @IsISO8601({ strict: true })
+  @IsCatDate('birthDate')
   birthDate?: string;
 
   @ApiPropertyOptional()
@@ -101,9 +78,7 @@ export class UpdateCatDto {
 
   @ApiPropertyOptional()
   @WhenPresent()
-  @Trim()
-  @IsString()
-  @IsNotEmpty()
+  @IsRequiredText()
   healthStatus?: string;
 
   @ApiPropertyOptional({
@@ -111,11 +86,7 @@ export class UpdateCatDto {
     type: String,
     description: 'Send null (or an empty text) to clear it',
   })
-  @IsOptional()
-  @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? value.trim() || null : value,
-  )
-  @IsString()
+  @NullableText()
   specialNeeds?: string | null;
 
   @ApiPropertyOptional({ enum: Compatibility })
@@ -152,11 +123,7 @@ export class UpdateCatDto {
     description: 'Replaces the full list of characteristics',
   })
   @WhenPresent()
-  @IsArray()
-  @ArrayMinSize(1, { message: 'at least one characteristic is required' })
-  @ArrayMaxSize(12)
-  @ArrayUnique()
-  @IsUUID('all', { each: true })
+  @IsCharacteristicIds()
   characteristicIds?: string[];
 
   @ApiPropertyOptional({

@@ -5,11 +5,13 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
+  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -22,6 +24,7 @@ import {
 } from './dto/admin-cat-detail.dto';
 import { AdminCatsPageDto } from './dto/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin-cats-query.dto';
+import { CreateCatDto } from './dto/create-cat.dto';
 import { UpdateCatDto } from './dto/update-cat.dto';
 
 // TODO: protect this controller with authentication once it is available.
@@ -59,6 +62,24 @@ export class AdminCatsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<AdoptionGroupMateDto[]> {
     return this.catsService.findPairedCatOptions(id);
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Creates a cat from the back office' })
+  @ApiCreatedResponse({ type: AdminCatDetailDto })
+  @ApiBadRequestResponse({
+    description:
+      'Invalid body. Business rule errors include a code: UNKNOWN_CHARACTERISTICS, PAIRED_CAT_ADOPTED',
+  })
+  @ApiConflictResponse({
+    description:
+      'Business rule errors include a code: FEATURED_LIMIT_REACHED, PAIRED_CAT_TAKEN',
+  })
+  @ApiNotFoundResponse({
+    description: 'The paired cat does not exist (code PAIRED_CAT_NOT_FOUND)',
+  })
+  create(@Body() dto: CreateCatDto): Promise<AdminCatDetailDto> {
+    return this.catsService.createForAdmin(dto);
   }
 
   @Patch(':id')
