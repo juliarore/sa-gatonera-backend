@@ -25,6 +25,7 @@ import {
 import { AdminCatsPageDto } from './dto/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin-cats-query.dto';
 import { CreateCatDto } from './dto/create-cat.dto';
+import { PairedCatOptionsQueryDto } from './dto/paired-cat-options-query.dto';
 import { UpdateCatDto } from './dto/update-cat.dto';
 
 // TODO: protect this controller with authentication once it is available.
@@ -43,25 +44,27 @@ export class AdminCatsController {
     return this.catsService.findForAdmin(query);
   }
 
+  @Get('paired-cat-options')
+  @ApiOperation({
+    summary:
+      'Cats available for joint adoption, ordered by name. With catId, excludes that cat and includes its current paired cat.',
+  })
+  @ApiOkResponse({ type: [AdoptionGroupMateDto] })
+  @ApiNotFoundResponse({
+    description: 'catId was sent and no cat exists with it',
+  })
+  findPairedCatOptions(
+    @Query() query: PairedCatOptionsQueryDto,
+  ): Promise<AdoptionGroupMateDto[]> {
+    return this.catsService.findPairedCatOptions(query.catId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Cat details for the back office' })
   @ApiOkResponse({ type: AdminCatDetailDto })
   @ApiNotFoundResponse({ description: 'No cat exists with this id' })
   findOne(@Param('id', ParseUUIDPipe) id: string): Promise<AdminCatDetailDto> {
     return this.catsService.findOneForAdmin(id);
-  }
-
-  @Get(':id/paired-cat-options')
-  @ApiOperation({
-    summary:
-      'Cats that can be paired for joint adoption with this cat, ordered by name',
-  })
-  @ApiOkResponse({ type: [AdoptionGroupMateDto] })
-  @ApiNotFoundResponse({ description: 'No cat exists with this id' })
-  findPairedCatOptions(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<AdoptionGroupMateDto[]> {
-    return this.catsService.findPairedCatOptions(id);
   }
 
   @Post()

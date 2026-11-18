@@ -255,20 +255,25 @@ export class CatsService {
     return this.findOneForAdmin(id);
   }
 
-  async findPairedCatOptions(id: string): Promise<AdoptionGroupMateDto[]> {
-    const cat = await this.catsRepository.findOne({ where: { id } });
+  async findPairedCatOptions(catId?: string): Promise<AdoptionGroupMateDto[]> {
+    const cat = catId
+      ? await this.catsRepository.findOne({ where: { id: catId } })
+      : null;
 
-    if (!cat) {
-      throw new NotFoundException(`Cat ${id} not found`);
+    if (catId && !cat) {
+      throw new NotFoundException(`Cat ${catId} not found`);
     }
 
-    const candidate = { id: Not(id), status: Not(CatStatus.ADOPTED) };
+    const candidate = {
+      status: Not(CatStatus.ADOPTED),
+      ...(catId && { id: Not(catId) }),
+    };
 
     return this.catsRepository.find({
       select: { id: true, name: true },
       where: [
         { ...candidate, adoptionGroupId: IsNull() },
-        { ...candidate, adoptionGroupId: cat.adoptionGroupId ?? IsNull() },
+        { ...candidate, adoptionGroupId: cat?.adoptionGroupId ?? IsNull() },
       ],
       order: { name: 'ASC' },
     });
