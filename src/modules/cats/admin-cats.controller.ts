@@ -25,6 +25,7 @@ import {
 import { AdminCatsPageDto } from './dto/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin-cats-query.dto';
 import { CreateCatDto } from './dto/create-cat.dto';
+import { FeaturedSummaryDto } from './dto/featured-summary.dto';
 import { PairedCatOptionsQueryDto } from './dto/paired-cat-options-query.dto';
 import { UpdateCatDto } from './dto/update-cat.dto';
 
@@ -59,6 +60,16 @@ export class AdminCatsController {
     return this.catsService.findPairedCatOptions(query.catId);
   }
 
+  @Get('featured-summary')
+  @ApiOperation({
+    summary:
+      'Number of cats currently featured on the home page (available only) and the maximum allowed',
+  })
+  @ApiOkResponse({ type: FeaturedSummaryDto })
+  getFeaturedSummary(): Promise<FeaturedSummaryDto> {
+    return this.catsService.getFeaturedSummary();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Cat details for the back office' })
   @ApiOkResponse({ type: AdminCatDetailDto })
@@ -76,7 +87,7 @@ export class AdminCatsController {
   })
   @ApiConflictResponse({
     description:
-      'Business rule errors include a code: FEATURED_LIMIT_REACHED, PAIRED_CAT_TAKEN',
+      'Business rule errors include a code: FEATURED_LIMIT_REACHED, FEATURED_NOT_AVAILABLE, PAIRED_CAT_TAKEN',
   })
   @ApiNotFoundResponse({
     description: 'The paired cat does not exist (code PAIRED_CAT_NOT_FOUND)',
@@ -98,7 +109,7 @@ export class AdminCatsController {
   })
   @ApiConflictResponse({
     description:
-      'Business rule errors include a code: FEATURED_LIMIT_REACHED, PAIRED_CAT_TAKEN',
+      'Business rule errors include a code: FEATURED_LIMIT_REACHED, FEATURED_NOT_AVAILABLE, PAIRED_CAT_TAKEN',
   })
   update(
     @Param('id', ParseUUIDPipe) id: string,

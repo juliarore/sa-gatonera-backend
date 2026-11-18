@@ -16,6 +16,7 @@ import {
 import { AdminCatsPageDto } from './dto/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin-cats-query.dto';
 import { CreateCatDto } from './dto/create-cat.dto';
+import { FeaturedSummaryDto } from './dto/featured-summary.dto';
 import { UpdateCatDto } from './dto/update-cat.dto';
 import { CatErrorCode, CatGender, CatStatus } from './enums';
 import { getAdoptionFee } from './utils/adoption-fee';
@@ -51,6 +52,7 @@ export class CatsService {
         'cat.birthDate',
         'cat.status',
         'cat.isUrgent',
+        'cat.isFeatured',
         'cat.entryDate',
         'cat.createdAt',
       ])
@@ -91,6 +93,7 @@ export class CatsService {
         birthDate: cat.birthDate,
         status: cat.status,
         isUrgent: cat.isUrgent,
+        isFeatured: cat.isFeatured,
         entryDate: cat.entryDate,
         ageGroup: getAgeGroup(cat.birthDate),
         isVisible: cat.status === CatStatus.AVAILABLE,
@@ -187,9 +190,10 @@ export class CatsService {
           ...fields
         } = dto;
 
-        if (isFeatured) {
-          await this.assertFeaturedLimit(cats);
-        }
+        await this.assertFeaturedAllowed(cats, {
+          isFeatured: isFeatured ?? false,
+          status: status ?? CatStatus.AVAILABLE,
+        });
 
         const characteristics = await this.findCharacteristics(
           manager,
@@ -231,12 +235,24 @@ export class CatsService {
       }
 
       const { characteristicIds, pairedCatId, ...fields } = dto;
+      const wasCounted = cat.isFeatured && cat.status === CatStatus.AVAILABLE;
+      const status = fields.status ?? cat.status;
+      const isFeatured =
+        fields.isFeatured ??
+        (fields.status !== undefined && status !== CatStatus.AVAILABLE
+          ? false
+          : cat.isFeatured);
 
-      if (fields.isFeatured === true && !cat.isFeatured) {
-        await this.assertFeaturedLimit(cats, id);
+      if (fields.isFeatured !== undefined || fields.status !== undefined) {
+        await this.assertFeaturedAllowed(
+          cats,
+          { isFeatured, status },
+          id,
+          wasCounted,
+        );
       }
 
-      Object.assign(cat, fields);
+      Object.assign(cat, fields, { isFeatured });
 
       if (characteristicIds !== undefined) {
         cat.characteristics = await this.findCharacteristics(
@@ -279,12 +295,46 @@ export class CatsService {
     });
   }
 
+  async getFeaturedSummary(): Promise<FeaturedSummaryDto> {
+    return {
+      count: await this.catsRepository.countBy({
+        isFeatured: true,
+        status: CatStatus.AVAILABLE,
+      }),
+      max: MAX_FEATURED_CATS,
+    };
+  }
+
+  private async assertFeaturedAllowed(
+    cats: Repository<Cat>,
+    cat: Pick<Cat, 'isFeatured' | 'status'>,
+    exceptId?: string,
+    alreadyCounted = false,
+  ): Promise<void> {
+    if (!cat.isFeatured) {
+      return;
+    }
+
+    if (cat.status !== CatStatus.AVAILABLE) {
+      throw new ConflictException({
+        statusCode: 409,
+        message: 'Only cats that are available for adoption can be featured.',
+        code: CatErrorCode.FEATURED_NOT_AVAILABLE,
+      });
+    }
+
+    if (!alreadyCounted) {
+      await this.assertFeaturedLimit(cats, exceptId);
+    }
+  }
+
   private async assertFeaturedLimit(
     cats: Repository<Cat>,
     exceptId?: string,
   ): Promise<void> {
     const featured = await cats.countBy({
       isFeatured: true,
+      status: CatStatus.AVAILABLE,
       ...(exceptId && { id: Not(exceptId) }),
     });
 

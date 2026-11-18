@@ -34,6 +34,9 @@ export class AdminCatListItemDto {
   })
   isVisible: boolean;
 
+  @ApiProperty({ description: 'True if the cat is featured on the home page' })
+  isFeatured: boolean;
+
   @ApiProperty({
     nullable: true,
     type: String,
