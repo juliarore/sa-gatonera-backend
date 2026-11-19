@@ -6,8 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
+import { rm } from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import { EntityManager, In, IsNull, Not, Repository } from 'typeorm';
 import { Characteristic } from '../characteristics/characteristic.entity';
+import { CatImage } from './cat-image.entity';
 import { Cat } from './cat.entity';
 import {
   AdminCatDetailDto,
@@ -26,6 +29,7 @@ import { coded } from './utils/coded-exception';
 import { slugify } from './utils/slug';
 
 const MAX_FEATURED_CATS = 3;
+const UPLOADS_DIR = join(process.cwd(), 'uploads', 'cats');
 
 @Injectable()
 export class CatsService {
@@ -266,6 +270,37 @@ export class CatsService {
     });
 
     return this.findOneForAdmin(id);
+  }
+
+  async deleteForAdmin(id: string): Promise<void> {
+    const imageUrls = await this.catsRepository.manager.transaction(
+      async (manager) => {
+        const cats = manager.getRepository(Cat);
+        const cat = await cats.findOne({
+          where: { id },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!cat) {
+          throw new NotFoundException(`Cat ${id} not found`);
+        }
+
+        const images = await manager
+          .getRepository(CatImage)
+          .find({ select: { imageUrl: true }, where: { catId: id } });
+
+        await this.releaseGroup(cats, cat);
+        await cats.delete(id);
+
+        return images.map(({ imageUrl }) => imageUrl);
+      },
+    );
+
+    await Promise.all(
+      imageUrls.map((imageUrl) =>
+        rm(join(UPLOADS_DIR, basename(imageUrl)), { force: true }),
+      ),
+    );
   }
 
   async findPairedCatOptions(catId?: string): Promise<AdoptionGroupMateDto[]> {

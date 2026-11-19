@@ -143,6 +143,19 @@ export class AdminCatsController {
     return this.catsService.updateForAdmin(id, dto);
   }
 
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiOperation({
+    summary:
+      'Deletes a cat with its photos and characteristics; its paired cat is left without a group',
+  })
+  @ApiNoContentResponse({ description: 'Cat deleted' })
+  @ApiBadRequestResponse({ description: 'Invalid id' })
+  @ApiNotFoundResponse({ description: 'No cat exists with this id' })
+  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.catsService.deleteForAdmin(id);
+  }
+
   @Post(':id/images')
   @UseInterceptors(
     FileInterceptor('file', {
