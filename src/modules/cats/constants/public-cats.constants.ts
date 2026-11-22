@@ -1,1 +1,4 @@
 export const PUBLIC_CATS_MAX_LIMIT = 50;
+
+export const PUBLIC_CATS_DEFAULT_PAGE_SIZE = 12;
+export const PUBLIC_CATS_MAX_PAGE_SIZE = 24;

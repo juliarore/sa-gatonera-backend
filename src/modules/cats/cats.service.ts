@@ -20,13 +20,16 @@ import { CreateCatDto } from './dto/admin/create-cat.dto';
 import { FeaturedSummaryDto } from './dto/admin/featured-summary.dto';
 import { PublicCatsQueryDto } from './dto/public/public-cats-query.dto';
 import { PublicCatSummaryDto } from './dto/public/public-cat-summary.dto';
+import { PublicCatDto, PublicCatsPageDto } from './dto/public/public-cat.dto';
+import { PublicCatsPageQueryDto } from './dto/public/public-cats-page-query.dto';
 import { UpdateCatDto } from './dto/admin/update-cat.dto';
-import { CatErrorCode, CatStatus } from './enums';
+import { CatErrorCode, CatStatus, PublicCatsSort } from './enums';
 import { getAdoptionFee } from './utils/adoption-fee';
 import { getAgeGroup, getBirthDateRange } from './utils/age-group';
 import { toCatImageDto } from '../cat-images/mappers/cat-image.mapper';
 import { toCatCharacteristicDtos } from './mappers/cat-characteristics.mapper';
 import { coded } from '../../common/errors/coded-exception';
+import { toPublicCatDto } from './mappers/public-cat.mapper';
 import { toPublicCatSummaryDto } from './mappers/public-cat-summary.mapper';
 import { slugify } from './utils/slug';
 import { CAT_UPLOADS_DIR } from '../cat-images/constants/image-storage.constants';
@@ -35,6 +38,31 @@ import {
   MAX_FEATURED_CATS,
 } from './constants/featured-cats.constants';
 import { PUBLIC_CATS_MAX_LIMIT } from './constants/public-cats.constants';
+
+const PUBLIC_CATS_ORDER: Record<
+  PublicCatsSort,
+  Record<string, 'ASC' | 'DESC'>
+> = {
+  [PublicCatsSort.RECENT]: {
+    'cat.entryDate': 'DESC',
+    'cat.createdAt': 'DESC',
+    'cat.id': 'ASC',
+  },
+  [PublicCatsSort.URGENT]: {
+    'cat.isUrgent': 'DESC',
+    'cat.entryDate': 'DESC',
+    'cat.createdAt': 'DESC',
+    'cat.id': 'ASC',
+  },
+  [PublicCatsSort.NAME]: { 'cat.name': 'ASC', 'cat.id': 'ASC' },
+};
+
+const FEATURED_FILL_ORDER: Record<string, 'ASC' | 'DESC'> = {
+  'cat.isUrgent': 'DESC',
+  'cat.entryDate': 'ASC',
+  'cat.createdAt': 'ASC',
+  'cat.id': 'ASC',
+};
 
 @Injectable()
 export class CatsService {
@@ -57,6 +85,49 @@ export class CatsService {
     });
 
     return cats.map(toPublicCatSummaryDto);
+  }
+
+  async findPublicPage(
+    query: PublicCatsPageQueryDto,
+  ): Promise<PublicCatsPageDto> {
+    const { page, pageSize, sort } = query;
+
+    const [cats, total] = await this.createPublicCatsQuery()
+      .orderBy(PUBLIC_CATS_ORDER[sort])
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getManyAndCount();
+
+    return {
+      items: cats.map(toPublicCatDto),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
+  async findPublicFeatured(): Promise<PublicCatDto[]> {
+    const featured = await this.createPublicCatsQuery()
+      .andWhere('cat.isFeatured = true')
+      .orderBy(FEATURED_FILL_ORDER)
+      .take(MAX_FEATURED_CATS)
+      .getMany();
+
+    const missing = MAX_FEATURED_CATS - featured.length;
+    const fillers =
+      missing > 0
+        ? await this.createPublicCatsQuery()
+            .andWhere(
+              featured.length > 0 ? 'cat.id NOT IN (:...featuredIds)' : '1 = 1',
+              { featuredIds: featured.map(({ id }) => id) },
+            )
+            .orderBy(FEATURED_FILL_ORDER)
+            .take(missing)
+            .getMany()
+        : [];
+
+    return [...featured, ...fillers].map(toPublicCatDto);
   }
 
   async findForAdmin(query: AdminCatsQueryDto): Promise<AdminCatsPageDto> {
@@ -340,6 +411,14 @@ export class CatsService {
       count: await this.countFeatured(this.catsRepository),
       max: MAX_FEATURED_CATS,
     };
+  }
+
+  private createPublicCatsQuery() {
+    return this.catsRepository
+      .createQueryBuilder('cat')
+      .leftJoinAndSelect('cat.characteristics', 'characteristic')
+      .leftJoinAndSelect('cat.images', 'cover', 'cover.displayOrder = 1')
+      .where('cat.status = :status', { status: CatStatus.AVAILABLE });
   }
 
   private async assertFeaturedAllowed(

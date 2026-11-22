@@ -4,3 +4,4 @@ export * from './cat-error-code.enum';
 export * from './cat-gender.enum';
 export * from './cat-status.enum';
 export * from './compatibility.enum';
+export * from './public-cats-sort.enum';
