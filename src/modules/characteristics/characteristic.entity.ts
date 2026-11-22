@@ -6,7 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Cat } from '../cats/cat.entity';
+import { Cat } from '../cats/entities/cat.entity';
 
 @Entity('characteristics')
 export class Characteristic {

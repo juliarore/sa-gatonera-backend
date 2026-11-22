@@ -1,8 +1,9 @@
 import { AgeGroup } from '../enums';
-
-export const KITTEN_MAX_MONTHS = 12;
-export const YOUNG_MAX_MONTHS = 24;
-export const ADULT_MAX_MONTHS = 7 * 12;
+import {
+  ADULT_MAX_MONTHS,
+  KITTEN_MAX_MONTHS,
+  YOUNG_MAX_MONTHS,
+} from '../constants/age-group.constants';
 
 export interface BirthDateRange {
   /** The cat must be born strictly after this date (YYYY-MM-DD). */

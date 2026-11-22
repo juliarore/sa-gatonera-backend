@@ -1,8 +1,8 @@
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import dataSource from '../data-source';
-import { CatImage } from '../../modules/cats/cat-image.entity';
-import { Cat } from '../../modules/cats/cat.entity';
+import { CatImage } from '../../modules/cat-images/entities/cat-image.entity';
+import { Cat } from '../../modules/cats/entities/cat.entity';
 import { Characteristic } from '../../modules/characteristics/characteristic.entity';
 import { catImagesSeed } from './cat-images.seed';
 import { catsSeed } from './cats.seed';

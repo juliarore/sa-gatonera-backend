@@ -1,8 +1,9 @@
 import { CatGender } from '../enums';
-
-export const STERILIZED_ADOPTION_FEE = 150;
-export const MALE_ADOPTION_FEE = 200;
-export const FEMALE_ADOPTION_FEE = 250;
+import {
+  FEMALE_ADOPTION_FEE,
+  MALE_ADOPTION_FEE,
+  STERILIZED_ADOPTION_FEE,
+} from '../constants/adoption-fee.constants';
 
 export function getAdoptionFee(cat: {
   gender: CatGender;

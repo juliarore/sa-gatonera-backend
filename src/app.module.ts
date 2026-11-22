@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
+import { CatImagesModule } from './modules/cat-images/cat-images.module';
 import { CatsModule } from './modules/cats/cats.module';
 import { CharacteristicsModule } from './modules/characteristics/characteristics.module';
 
@@ -11,6 +12,7 @@ import { CharacteristicsModule } from './modules/characteristics/characteristics
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
     CatsModule,
+    CatImagesModule,
     CharacteristicsModule,
   ],
   controllers: [AppController],

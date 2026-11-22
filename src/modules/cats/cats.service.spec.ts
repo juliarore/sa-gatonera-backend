@@ -1,5 +1,5 @@
 import { Repository } from 'typeorm';
-import { Cat } from './cat.entity';
+import { Cat } from './entities/cat.entity';
 import { CatsService } from './cats.service';
 import { CatStatus } from './enums';
 

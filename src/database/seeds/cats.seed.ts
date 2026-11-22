@@ -1,4 +1,4 @@
-import { Cat } from '../../modules/cats/cat.entity';
+import { Cat } from '../../modules/cats/entities/cat.entity';
 import {
   ActivityLevel,
   CatGender,

@@ -10,37 +10,31 @@ import { rm } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { EntityManager, In, IsNull, Not, Repository } from 'typeorm';
 import { Characteristic } from '../characteristics/characteristic.entity';
-import { CatImage } from './cat-image.entity';
-import { Cat } from './cat.entity';
-import {
-  AdminCatDetailDto,
-  AdoptionGroupMateDto,
-} from './dto/admin-cat-detail.dto';
-import { AdminCatsPageDto } from './dto/admin-cats-page.dto';
-import { AdminCatsQueryDto } from './dto/admin-cats-query.dto';
-import { MAX_FEATURED_CATS } from './cats.constants';
-import { CreateCatDto } from './dto/create-cat.dto';
-import { FeaturedSummaryDto } from './dto/featured-summary.dto';
-import {
-  PublicCatsQueryDto,
-  PUBLIC_CATS_MAX_LIMIT,
-} from './dto/public-cats-query.dto';
-import { PublicCatSummaryDto } from './dto/public-cat-summary.dto';
-import { UpdateCatDto } from './dto/update-cat.dto';
+import { CatImage } from '../cat-images/entities/cat-image.entity';
+import { Cat } from './entities/cat.entity';
+import { AdminCatDetailDto } from './dto/admin/admin-cat-detail.dto';
+import { AdoptionGroupMateDto } from './dto/admin/adoption-group-mate.dto';
+import { AdminCatsPageDto } from './dto/admin/admin-cats-page.dto';
+import { AdminCatsQueryDto } from './dto/admin/admin-cats-query.dto';
+import { CreateCatDto } from './dto/admin/create-cat.dto';
+import { FeaturedSummaryDto } from './dto/admin/featured-summary.dto';
+import { PublicCatsQueryDto } from './dto/public/public-cats-query.dto';
+import { PublicCatSummaryDto } from './dto/public/public-cat-summary.dto';
+import { UpdateCatDto } from './dto/admin/update-cat.dto';
 import { CatErrorCode, CatStatus } from './enums';
 import { getAdoptionFee } from './utils/adoption-fee';
 import { getAgeGroup, getBirthDateRange } from './utils/age-group';
-import { toCatImageDto } from './utils/cat-image-dto';
-import { toCatCharacteristicDtos } from './utils/characteristics-dto';
-import { coded } from './utils/coded-exception';
-import { toPublicCatSummaryDto } from './utils/public-cat-summary-dto';
+import { toCatImageDto } from '../cat-images/mappers/cat-image.mapper';
+import { toCatCharacteristicDtos } from './mappers/cat-characteristics.mapper';
+import { coded } from '../../common/errors/coded-exception';
+import { toPublicCatSummaryDto } from './mappers/public-cat-summary.mapper';
 import { slugify } from './utils/slug';
-
-const FEATURED_CATS_FILTER = {
-  isFeatured: true,
-  status: CatStatus.AVAILABLE,
-} as const;
-const UPLOADS_DIR = join(process.cwd(), 'uploads', 'cats');
+import { CAT_UPLOADS_DIR } from '../cat-images/constants/image-storage.constants';
+import {
+  FEATURED_CATS_FILTER,
+  MAX_FEATURED_CATS,
+} from './constants/featured-cats.constants';
+import { PUBLIC_CATS_MAX_LIMIT } from './constants/public-cats.constants';
 
 @Injectable()
 export class CatsService {
@@ -312,7 +306,7 @@ export class CatsService {
 
     await Promise.all(
       imageUrls.map((imageUrl) =>
-        rm(join(UPLOADS_DIR, basename(imageUrl)), { force: true }),
+        rm(join(CAT_UPLOADS_DIR, basename(imageUrl)), { force: true }),
       ),
     );
   }

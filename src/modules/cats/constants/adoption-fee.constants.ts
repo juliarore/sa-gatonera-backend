@@ -1,0 +1,3 @@
+export const STERILIZED_ADOPTION_FEE = 150;
+export const MALE_ADOPTION_FEE = 200;
+export const FEMALE_ADOPTION_FEE = 250;
