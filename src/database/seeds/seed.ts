@@ -1,8 +1,10 @@
+import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import dataSource from '../data-source';
 import { CatImage } from '../../modules/cat-images/entities/cat-image.entity';
 import { Cat } from '../../modules/cats/entities/cat.entity';
+import { CatStatus } from '../../modules/cats/enums';
 import { Characteristic } from '../../modules/characteristics/characteristic.entity';
 import { catImagesSeed } from './cat-images.seed';
 import { catsSeed } from './cats.seed';
@@ -59,7 +61,8 @@ async function seed() {
         continue;
       }
 
-      const fileName = `${slug}${extname(source)}`;
+      const code = createHash('sha1').update(slug).digest('hex').slice(0, 6);
+      const fileName = `${slug}-${code}${extname(source)}`;
       copyFileSync(sourcePath, join(uploadsDir, fileName));
       catImages.push({
         catId,
@@ -75,9 +78,21 @@ async function seed() {
         .upsert(catImages, ['catId', 'displayOrder']);
     }
 
+    const available = catsSeed.filter(
+      ({ status }) => status === CatStatus.AVAILABLE,
+    );
+    const featured = catsSeed.filter(({ isFeatured }) => isFeatured);
+    const pairs = new Set(
+      catsSeed.flatMap(({ adoptionGroupId }) => adoptionGroupId ?? []),
+    );
+
     console.log(
       `Seed completed: ${characteristicsSeed.length} characteristics, ${catsSeed.length} cats and ${catImages.length} cat images upserted.`,
     );
+    console.log(
+      `Seeded cats: ${catsSeed.length} total, ${available.length} available, ${catsSeed.length - available.length} not available, ${featured.length} featured, ${pairs.size} joint-adoption pairs.`,
+    );
+    console.log(`Cats in the database: ${await catsRepository.count()}.`);
   } finally {
     await dataSource.destroy();
   }
