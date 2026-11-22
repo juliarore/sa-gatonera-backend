@@ -18,26 +18,23 @@ import { AdminCatsPageDto } from './dto/admin/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin/admin-cats-query.dto';
 import { CreateCatDto } from './dto/admin/create-cat.dto';
 import { FeaturedSummaryDto } from './dto/admin/featured-summary.dto';
-import { PublicCatsQueryDto } from './dto/public/public-cats-query.dto';
-import { PublicCatSummaryDto } from './dto/public/public-cat-summary.dto';
 import { PublicCatDto, PublicCatsPageDto } from './dto/public/public-cat.dto';
 import { PublicCatsPageQueryDto } from './dto/public/public-cats-page-query.dto';
 import { UpdateCatDto } from './dto/admin/update-cat.dto';
 import { CatErrorCode, CatStatus, PublicCatsSort } from './enums';
 import { getAdoptionFee } from './utils/adoption-fee';
 import { getAgeGroup, getBirthDateRange } from './utils/age-group';
+import { getAgeLabel } from './utils/age-label';
 import { toCatImageDto } from '../cat-images/mappers/cat-image.mapper';
 import { toCatCharacteristicDtos } from './mappers/cat-characteristics.mapper';
 import { coded } from '../../common/errors/coded-exception';
 import { toPublicCatDto } from './mappers/public-cat.mapper';
-import { toPublicCatSummaryDto } from './mappers/public-cat-summary.mapper';
 import { slugify } from './utils/slug';
 import { CAT_UPLOADS_DIR } from '../cat-images/constants/image-storage.constants';
 import {
   FEATURED_CATS_FILTER,
   MAX_FEATURED_CATS,
 } from './constants/featured-cats.constants';
-import { PUBLIC_CATS_MAX_LIMIT } from './constants/public-cats.constants';
 
 const PUBLIC_CATS_ORDER: Record<
   PublicCatsSort,
@@ -70,22 +67,6 @@ export class CatsService {
     @InjectRepository(Cat)
     private readonly catsRepository: Repository<Cat>,
   ) {}
-
-  async findPublic(query: PublicCatsQueryDto): Promise<PublicCatSummaryDto[]> {
-    const { featured, limit } = query;
-    const take = featured
-      ? Math.min(limit ?? MAX_FEATURED_CATS, MAX_FEATURED_CATS)
-      : (limit ?? PUBLIC_CATS_MAX_LIMIT);
-
-    const cats = await this.catsRepository.find({
-      where: featured ? FEATURED_CATS_FILTER : { status: CatStatus.AVAILABLE },
-      relations: { characteristics: true, images: true },
-      order: { isUrgent: 'DESC', entryDate: 'ASC', name: 'ASC' },
-      take,
-    });
-
-    return cats.map(toPublicCatSummaryDto);
-  }
 
   async findPublicPage(
     query: PublicCatsPageQueryDto,
@@ -141,6 +122,7 @@ export class CatsService {
         'cat.slug',
         'cat.gender',
         'cat.birthDate',
+        'cat.birthDateIsEstimated',
         'cat.status',
         'cat.isUrgent',
         'cat.isFeatured',
@@ -186,6 +168,7 @@ export class CatsService {
         isUrgent: cat.isUrgent,
         isFeatured: cat.isFeatured,
         entryDate: cat.entryDate,
+        ageLabel: getAgeLabel(cat.birthDate, cat.birthDateIsEstimated),
         ageGroup: getAgeGroup(cat.birthDate),
         isVisible: cat.status === CatStatus.AVAILABLE,
         coverImageUrl: cat.images[0]?.imageUrl ?? null,
@@ -246,6 +229,7 @@ export class CatsService {
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
       adoptionFee: getAdoptionFee(cat),
+      ageLabel: getAgeLabel(cat.birthDate, cat.birthDateIsEstimated),
       ageGroup: getAgeGroup(cat.birthDate),
       isVisible: cat.status === CatStatus.AVAILABLE,
       adoptionGroupMates: adoptionGroupMates.map(({ id, name }) => ({

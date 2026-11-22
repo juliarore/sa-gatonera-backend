@@ -26,6 +26,12 @@ export class AdminCatListItemDto {
   @ApiProperty({ example: '2026-09-15' })
   entryDate: string;
 
+  @ApiProperty({
+    example: 'aprox. 3 anys',
+    description: 'Age in months or years, prefixed with "aprox." if estimated',
+  })
+  ageLabel: string;
+
   @ApiProperty({ enum: AgeGroup })
   ageGroup: AgeGroup;
 

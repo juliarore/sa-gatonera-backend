@@ -80,6 +80,12 @@ export class AdminCatDetailDto {
   @ApiProperty({ description: 'Adoption fee in euros' })
   adoptionFee: number;
 
+  @ApiProperty({
+    example: 'aprox. 3 anys',
+    description: 'Age in months or years, prefixed with "aprox." if estimated',
+  })
+  ageLabel: string;
+
   @ApiProperty({ enum: AgeGroup })
   ageGroup: AgeGroup;
 
