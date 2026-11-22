@@ -18,17 +18,28 @@ import {
 } from './dto/admin-cat-detail.dto';
 import { AdminCatsPageDto } from './dto/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin-cats-query.dto';
+import { MAX_FEATURED_CATS } from './cats.constants';
 import { CreateCatDto } from './dto/create-cat.dto';
 import { FeaturedSummaryDto } from './dto/featured-summary.dto';
+import {
+  PublicCatsQueryDto,
+  PUBLIC_CATS_MAX_LIMIT,
+} from './dto/public-cats-query.dto';
+import { PublicCatSummaryDto } from './dto/public-cat-summary.dto';
 import { UpdateCatDto } from './dto/update-cat.dto';
-import { CatErrorCode, CatGender, CatStatus } from './enums';
+import { CatErrorCode, CatStatus } from './enums';
 import { getAdoptionFee } from './utils/adoption-fee';
 import { getAgeGroup, getBirthDateRange } from './utils/age-group';
 import { toCatImageDto } from './utils/cat-image-dto';
+import { toCatCharacteristicDtos } from './utils/characteristics-dto';
 import { coded } from './utils/coded-exception';
+import { toPublicCatSummaryDto } from './utils/public-cat-summary-dto';
 import { slugify } from './utils/slug';
 
-const MAX_FEATURED_CATS = 3;
+const FEATURED_CATS_FILTER = {
+  isFeatured: true,
+  status: CatStatus.AVAILABLE,
+} as const;
 const UPLOADS_DIR = join(process.cwd(), 'uploads', 'cats');
 
 @Injectable()
@@ -38,11 +49,20 @@ export class CatsService {
     private readonly catsRepository: Repository<Cat>,
   ) {}
 
-  findAvailable(): Promise<Cat[]> {
-    return this.catsRepository.find({
-      where: { status: CatStatus.AVAILABLE },
-      order: { isUrgent: 'DESC', entryDate: 'ASC' },
+  async findPublic(query: PublicCatsQueryDto): Promise<PublicCatSummaryDto[]> {
+    const { featured, limit } = query;
+    const take = featured
+      ? Math.min(limit ?? MAX_FEATURED_CATS, MAX_FEATURED_CATS)
+      : (limit ?? PUBLIC_CATS_MAX_LIMIT);
+
+    const cats = await this.catsRepository.find({
+      where: featured ? FEATURED_CATS_FILTER : { status: CatStatus.AVAILABLE },
+      relations: { characteristics: true, images: true },
+      order: { isUrgent: 'DESC', entryDate: 'ASC', name: 'ASC' },
+      take,
     });
+
+    return cats.map(toPublicCatSummaryDto);
   }
 
   async findForAdmin(query: AdminCatsQueryDto): Promise<AdminCatsPageDto> {
@@ -132,16 +152,10 @@ export class CatsService {
         })
       : [];
 
-    const characteristics = cat.characteristics
-      .map((characteristic) => ({
-        id: characteristic.id,
-        code: characteristic.code,
-        label:
-          cat.gender === CatGender.FEMALE
-            ? characteristic.labelFeminine
-            : characteristic.labelMasculine,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'ca'));
+    const characteristics = toCatCharacteristicDtos(
+      cat.gender,
+      cat.characteristics,
+    );
 
     return {
       id: cat.id,
@@ -375,8 +389,7 @@ export class CatsService {
     exceptId?: string,
   ): Promise<number> {
     return cats.countBy({
-      isFeatured: true,
-      status: CatStatus.AVAILABLE,
+      ...FEATURED_CATS_FILTER,
       ...(exceptId && { id: Not(exceptId) }),
     });
   }
