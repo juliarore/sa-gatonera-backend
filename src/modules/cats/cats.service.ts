@@ -36,10 +36,16 @@ import {
   MAX_FEATURED_CATS,
 } from './constants/featured-cats.constants';
 
+const TIE_BREAK: Record<string, 'ASC' | 'DESC'> = {
+  'cat.createdAt': 'ASC',
+  'cat.id': 'ASC',
+};
+
 const PUBLIC_CATS_ORDER: Record<
   PublicCatsSort,
   Record<string, 'ASC' | 'DESC'>
 > = {
+  [PublicCatsSort.OLDEST]: { 'cat.entryDate': 'ASC', ...TIE_BREAK },
   [PublicCatsSort.RECENT]: {
     'cat.entryDate': 'DESC',
     'cat.createdAt': 'DESC',
@@ -47,11 +53,13 @@ const PUBLIC_CATS_ORDER: Record<
   },
   [PublicCatsSort.URGENT]: {
     'cat.isUrgent': 'DESC',
-    'cat.entryDate': 'DESC',
-    'cat.createdAt': 'DESC',
-    'cat.id': 'ASC',
+    'cat.entryDate': 'ASC',
+    ...TIE_BREAK,
   },
-  [PublicCatsSort.NAME]: { 'cat.name': 'ASC', 'cat.id': 'ASC' },
+  [PublicCatsSort.AGE_ASC]: { 'cat.birthDate': 'DESC', ...TIE_BREAK },
+  [PublicCatsSort.AGE_DESC]: { 'cat.birthDate': 'ASC', ...TIE_BREAK },
+  [PublicCatsSort.NAME]: { 'cat.name': 'ASC', ...TIE_BREAK },
+  [PublicCatsSort.NAME_DESC]: { 'cat.name': 'DESC', ...TIE_BREAK },
 };
 
 const FEATURED_FILL_ORDER: Record<string, 'ASC' | 'DESC'> = {

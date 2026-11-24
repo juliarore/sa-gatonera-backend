@@ -29,11 +29,11 @@ export class PublicCatsPageQueryDto {
 
   @ApiPropertyOptional({
     enum: PublicCatsSort,
-    default: PublicCatsSort.RECENT,
+    default: PublicCatsSort.OLDEST,
     description:
-      'recent: newest entry first, urgent: urgent cats first and then newest, name: A-Z',
+      'oldest: longest in the shelter first, recent: newest entry first, urgent: urgent cats first and then longest in the shelter, age-asc: youngest first, age-desc: oldest first, name: A-Z, name-desc: Z-A',
   })
   @IsOptional()
   @IsEnum(PublicCatsSort)
-  sort: PublicCatsSort = PublicCatsSort.RECENT;
+  sort: PublicCatsSort = PublicCatsSort.OLDEST;
 }
