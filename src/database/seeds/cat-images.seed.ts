@@ -39,7 +39,7 @@ export const catImagesSeed: CatImageSeed[] = [
   single('caramelo', 'Caramelo'),
   single('dana', 'Dana'),
   single('maia', 'Maia'),
-  single('bruna', 'Bruna', 'arya.jpeg'),
+  single('bruna', 'Bruna'),
   single('tango', 'Tango', 'caramelo.jpeg'),
   single('cleo', 'Cleo', 'dana.jpeg'),
   single('toby', 'Toby', 'maia.jpeg'),

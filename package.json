@@ -22,6 +22,7 @@
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
     "seed": "ts-node src/database/seeds/seed.ts",
+    "seed:clean-uploads": "ts-node src/database/seeds/clean-uploads.ts",
     "migration:revert": "npm run typeorm -- migration:revert",
     "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-e2e.json"
   },
