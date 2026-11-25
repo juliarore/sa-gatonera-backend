@@ -21,7 +21,13 @@ import { FeaturedSummaryDto } from './dto/admin/featured-summary.dto';
 import { PublicCatDto, PublicCatsPageDto } from './dto/public/public-cat.dto';
 import { PublicCatsPageQueryDto } from './dto/public/public-cats-page-query.dto';
 import { UpdateCatDto } from './dto/admin/update-cat.dto';
-import { CatErrorCode, CatStatus, PublicCatsSort } from './enums';
+import {
+  AdminCatsSort,
+  CatErrorCode,
+  CatStatus,
+  PublicCatsSort,
+  SortDirection,
+} from './enums';
 import { getAdoptionFee } from './utils/adoption-fee';
 import { getAgeGroup, getBirthDateRange } from './utils/age-group';
 import { getAgeLabel } from './utils/age-label';
@@ -60,6 +66,20 @@ const PUBLIC_CATS_ORDER: Record<
   [PublicCatsSort.AGE_DESC]: { 'cat.birthDate': 'ASC', ...TIE_BREAK },
   [PublicCatsSort.NAME]: { 'cat.name': 'ASC', ...TIE_BREAK },
   [PublicCatsSort.NAME_DESC]: { 'cat.name': 'DESC', ...TIE_BREAK },
+};
+
+const ADMIN_CATS_ORDER: Record<AdminCatsSort, [string, 'ASC' | 'DESC']> = {
+  [AdminCatsSort.ENTRY_DATE]: ['(cat.entryDate)', 'ASC'],
+  [AdminCatsSort.NAME]: ['(cat.name)', 'ASC'],
+  [AdminCatsSort.AGE]: ['(cat.birthDate)', 'DESC'],
+  [AdminCatsSort.STATUS]: [
+    "CASE cat.status WHEN 'available' THEN 0 WHEN 'in_foster' THEN 1 WHEN 'reserved' THEN 2 ELSE 3 END",
+    'ASC',
+  ],
+  [AdminCatsSort.VISIBILITY]: [
+    "CASE cat.status WHEN 'available' THEN 0 ELSE 1 END",
+    'ASC',
+  ],
 };
 
 const FEATURED_FILL_ORDER: Record<string, 'ASC' | 'DESC'> = {
@@ -120,7 +140,26 @@ export class CatsService {
   }
 
   async findForAdmin(query: AdminCatsQueryDto): Promise<AdminCatsPageDto> {
-    const { search, status, ageGroup, page, limit } = query;
+    const {
+      search,
+      status,
+      ageGroup,
+      isUrgent,
+      isFeatured,
+      sort,
+      dir,
+      page,
+      limit,
+    } = query;
+    const [orderColumn, ascOrder] = ADMIN_CATS_ORDER[sort];
+    const direction =
+      dir ??
+      (sort === AdminCatsSort.ENTRY_DATE
+        ? SortDirection.DESC
+        : SortDirection.ASC);
+    const reverse = direction === SortDirection.DESC;
+    const order = reverse ? (ascOrder === 'ASC' ? 'DESC' : 'ASC') : ascOrder;
+    const tieOrder = reverse ? 'DESC' : 'ASC';
 
     const qb = this.catsRepository
       .createQueryBuilder('cat')
@@ -139,8 +178,10 @@ export class CatsService {
       ])
       .leftJoin('cat.images', 'cover', 'cover.displayOrder = 1')
       .addSelect(['cover.id', 'cover.imageUrl', 'cover.altText'])
-      .orderBy('cat.entryDate', 'DESC')
-      .addOrderBy('cat.createdAt', 'DESC')
+      .addSelect(orderColumn, 'sort_key')
+      .orderBy('sort_key', order)
+      .addOrderBy('cat.createdAt', tieOrder)
+      .addOrderBy('cat.id', 'ASC')
       .skip((page - 1) * limit)
       .take(limit);
 
@@ -151,6 +192,14 @@ export class CatsService {
 
     if (status) {
       qb.andWhere('cat.status = :status', { status });
+    }
+
+    if (isUrgent === 'true') {
+      qb.andWhere('cat.isUrgent = true');
+    }
+
+    if (isFeatured === 'true') {
+      qb.andWhere('cat.isFeatured = true');
     }
 
     if (ageGroup) {

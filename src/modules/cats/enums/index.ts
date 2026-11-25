@@ -1,3 +1,4 @@
+export * from './admin-cats-sort.enum';
 export * from './activity-level.enum';
 export * from './age-group.enum';
 export * from './cat-error-code.enum';
