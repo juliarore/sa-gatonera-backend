@@ -8,5 +8,6 @@ import { CharacteristicsService } from './characteristics.service';
   imports: [TypeOrmModule.forFeature([Characteristic])],
   controllers: [AdminCharacteristicsController],
   providers: [CharacteristicsService],
+  exports: [CharacteristicsService],
 })
 export class CharacteristicsModule {}

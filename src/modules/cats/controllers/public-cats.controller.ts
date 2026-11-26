@@ -1,5 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CharacteristicsService } from '../../characteristics/characteristics.service';
+import { PublicCharacteristicDto } from '../../characteristics/dto/public-characteristic.dto';
 import { CatsService } from '../cats.service';
 import { PublicCatDto, PublicCatsPageDto } from '../dto/public/public-cat.dto';
 import { PublicCatsPageQueryDto } from '../dto/public/public-cats-page-query.dto';
@@ -7,7 +9,20 @@ import { PublicCatsPageQueryDto } from '../dto/public/public-cats-page-query.dto
 @ApiTags('public cats')
 @Controller('cats')
 export class PublicCatsController {
-  constructor(private readonly catsService: CatsService) {}
+  constructor(
+    private readonly catsService: CatsService,
+    private readonly characteristicsService: CharacteristicsService,
+  ) {}
+
+  @Get('characteristics')
+  @ApiOperation({
+    summary:
+      'Characteristics that can be used to filter the catalog, ordered by label.',
+  })
+  @ApiOkResponse({ type: [PublicCharacteristicDto] })
+  findCharacteristics(): Promise<PublicCharacteristicDto[]> {
+    return this.characteristicsService.findPublic();
+  }
 
   @Get('featured')
   @ApiOperation({

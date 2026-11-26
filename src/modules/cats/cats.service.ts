@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { EntityManager, In, IsNull, Not, Repository } from 'typeorm';
+import { Brackets, EntityManager, In, IsNull, Not, Repository } from 'typeorm';
 import { Characteristic } from '../characteristics/characteristic.entity';
 import { CatImage } from '../cat-images/entities/cat-image.entity';
 import { Cat } from './entities/cat.entity';
@@ -23,8 +23,11 @@ import { PublicCatsPageQueryDto } from './dto/public/public-cats-page-query.dto'
 import { UpdateCatDto } from './dto/admin/update-cat.dto';
 import {
   AdminCatsSort,
+  AgeGroup,
   CatErrorCode,
   CatStatus,
+  Compatibility,
+  CompatibleWith,
   PublicCatsSort,
   SortDirection,
 } from './enums';
@@ -82,6 +85,44 @@ const ADMIN_CATS_ORDER: Record<AdminCatsSort, [string, 'ASC' | 'DESC']> = {
   ],
 };
 
+const COMPATIBILITY_COLUMNS: Record<CompatibleWith, string> = {
+  [CompatibleWith.CATS]: 'cat.compatibleWithCats',
+  [CompatibleWith.DOGS]: 'cat.compatibleWithDogs',
+  [CompatibleWith.CHILDREN]: 'cat.compatibleWithChildren',
+};
+
+const ACCENTED = 'àáâäèéêëìíîïòóôöùúûüçñ';
+const UNACCENTED = 'aaaaeeeeiiiioooouuuucn';
+
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, '\\$&');
+}
+
+function birthDateCondition(
+  group: AgeGroup,
+  key = '',
+): [string, Record<string, string>] {
+  const { after, onOrBefore } = getBirthDateRange(group);
+  const conditions: string[] = [];
+  const params: Record<string, string> = {};
+  if (after) {
+    conditions.push(`cat.birthDate > :after${key}`);
+    params[`after${key}`] = after;
+  }
+  if (onOrBefore) {
+    conditions.push(`cat.birthDate <= :onOrBefore${key}`);
+    params[`onOrBefore${key}`] = onOrBefore;
+  }
+  return [conditions.join(' AND '), params];
+}
+
+function normalizeSearch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
 const FEATURED_FILL_ORDER: Record<string, 'ASC' | 'DESC'> = {
   'cat.isUrgent': 'DESC',
   'cat.entryDate': 'ASC',
@@ -99,9 +140,68 @@ export class CatsService {
   async findPublicPage(
     query: PublicCatsPageQueryDto,
   ): Promise<PublicCatsPageDto> {
-    const { page, pageSize, sort } = query;
+    const {
+      page,
+      pageSize,
+      sort,
+      gender,
+      ageGroup,
+      compatible,
+      traits,
+      urgent,
+      joint,
+      search,
+    } = query;
+    const qb = this.createPublicCatsQuery();
 
-    const [cats, total] = await this.createPublicCatsQuery()
+    if (gender?.length) {
+      qb.andWhere('cat.gender IN (:...gender)', { gender });
+    }
+
+    if (ageGroup?.length) {
+      qb.andWhere(
+        new Brackets((groups) => {
+          ageGroup.forEach((group, index) => {
+            groups.orWhere(...birthDateCondition(group, String(index)));
+          });
+        }),
+      );
+    }
+
+    compatible?.forEach((target) => {
+      qb.andWhere(`${COMPATIBILITY_COLUMNS[target]} = :compatible`, {
+        compatible: Compatibility.YES,
+      });
+    });
+
+    if (traits?.length) {
+      await this.assertCharacteristicCodesExist(traits);
+      qb.andWhere(
+        `EXISTS (SELECT 1 FROM cat_characteristics cc JOIN characteristics c ON c.id = cc.characteristic_id WHERE cc.cat_id = cat.id AND c.code IN (:...traits))`,
+        { traits },
+      );
+    }
+
+    if (urgent === 'true') {
+      qb.andWhere('cat.isUrgent = true');
+    }
+
+    if (joint === 'true') {
+      qb.andWhere('cat.adoptionGroupId IS NOT NULL');
+    }
+
+    if (search) {
+      qb.andWhere(
+        `translate(lower(cat.name), :accented, :unaccented) LIKE :search`,
+        {
+          accented: ACCENTED,
+          unaccented: UNACCENTED,
+          search: `%${escapeLike(normalizeSearch(search))}%`,
+        },
+      );
+    }
+
+    const [cats, total] = await qb
       .orderBy(PUBLIC_CATS_ORDER[sort])
       .skip((page - 1) * pageSize)
       .take(pageSize)
@@ -186,8 +286,9 @@ export class CatsService {
       .take(limit);
 
     if (search) {
-      const escaped = search.replace(/[\\%_]/g, '\\$&');
-      qb.andWhere('cat.name ILIKE :search', { search: `%${escaped}%` });
+      qb.andWhere('cat.name ILIKE :search', {
+        search: `%${escapeLike(search)}%`,
+      });
     }
 
     if (status) {
@@ -203,13 +304,7 @@ export class CatsService {
     }
 
     if (ageGroup) {
-      const { after, onOrBefore } = getBirthDateRange(ageGroup);
-      if (after) {
-        qb.andWhere('cat.birthDate > :after', { after });
-      }
-      if (onOrBefore) {
-        qb.andWhere('cat.birthDate <= :onOrBefore', { onOrBefore });
-      }
+      qb.andWhere(...birthDateCondition(ageGroup));
     }
 
     const [cats, total] = await qb.getManyAndCount();
@@ -527,6 +622,22 @@ export class CatsService {
     }
 
     return characteristics;
+  }
+
+  private async assertCharacteristicCodesExist(codes: string[]): Promise<void> {
+    const found = await this.catsRepository.manager
+      .getRepository(Characteristic)
+      .findBy({ code: In(codes) });
+    const foundCodes = new Set(found.map(({ code }) => code));
+    const missingCodes = codes.filter((code) => !foundCodes.has(code));
+
+    if (missingCodes.length > 0) {
+      throw coded(
+        BadRequestException,
+        `Unknown characteristic codes: ${missingCodes.join(', ')}`,
+        CatErrorCode.UNKNOWN_CHARACTERISTICS,
+      );
+    }
   }
 
   private async generateSlug(
