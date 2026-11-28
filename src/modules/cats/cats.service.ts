@@ -18,6 +18,7 @@ import { AdminCatsPageDto } from './dto/admin/admin-cats-page.dto';
 import { AdminCatsQueryDto } from './dto/admin/admin-cats-query.dto';
 import { CreateCatDto } from './dto/admin/create-cat.dto';
 import { FeaturedSummaryDto } from './dto/admin/featured-summary.dto';
+import { PublicCatDetailDto } from './dto/public/public-cat-detail.dto';
 import { PublicCatDto, PublicCatsPageDto } from './dto/public/public-cat.dto';
 import { PublicCatsPageQueryDto } from './dto/public/public-cats-page-query.dto';
 import { UpdateCatDto } from './dto/admin/update-cat.dto';
@@ -37,7 +38,10 @@ import { getAgeLabel } from './utils/age-label';
 import { toCatImageDto } from '../cat-images/mappers/cat-image.mapper';
 import { toCatCharacteristicDtos } from './mappers/cat-characteristics.mapper';
 import { coded } from '../../common/errors/coded-exception';
-import { toPublicCatDto } from './mappers/public-cat.mapper';
+import {
+  toPublicCatDetailDto,
+  toPublicCatDto,
+} from './mappers/public-cat.mapper';
 import { slugify } from './utils/slug';
 import { CAT_UPLOADS_DIR } from '../cat-images/constants/image-storage.constants';
 import {
@@ -237,6 +241,32 @@ export class CatsService {
         : [];
 
     return [...featured, ...fillers].map(toPublicCatDto);
+  }
+
+  async findPublicBySlug(slug: string): Promise<PublicCatDetailDto> {
+    const cat = await this.catsRepository
+      .createQueryBuilder('cat')
+      .leftJoinAndSelect('cat.characteristics', 'characteristic')
+      .leftJoinAndSelect('cat.images', 'image')
+      .where('cat.slug = :slug', { slug })
+      .andWhere('cat.status = :status', { status: CatStatus.AVAILABLE })
+      .orderBy('image.displayOrder', 'ASC')
+      .getOne();
+
+    if (!cat) {
+      throw new NotFoundException(`Cat ${slug} not found`);
+    }
+
+    const pairedCat = cat.adoptionGroupId
+      ? await this.createPublicCatsQuery()
+          .andWhere('cat.adoptionGroupId = :groupId', {
+            groupId: cat.adoptionGroupId,
+          })
+          .andWhere('cat.id != :id', { id: cat.id })
+          .getOne()
+      : null;
+
+    return toPublicCatDetailDto(cat, pairedCat);
   }
 
   async findForAdmin(query: AdminCatsQueryDto): Promise<AdminCatsPageDto> {

@@ -1,8 +1,14 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CharacteristicsService } from '../../characteristics/characteristics.service';
 import { PublicCharacteristicDto } from '../../characteristics/dto/public-characteristic.dto';
 import { CatsService } from '../cats.service';
+import { PublicCatDetailDto } from '../dto/public/public-cat-detail.dto';
 import { PublicCatDto, PublicCatsPageDto } from '../dto/public/public-cat.dto';
 import { PublicCatsPageQueryDto } from '../dto/public/public-cats-page-query.dto';
 
@@ -41,5 +47,15 @@ export class PublicCatsController {
   @ApiOkResponse({ type: PublicCatsPageDto })
   findPage(@Query() query: PublicCatsPageQueryDto): Promise<PublicCatsPageDto> {
     return this.catsService.findPublicPage(query);
+  }
+
+  @Get(':slug')
+  @ApiOperation({ summary: 'Detail of a cat available for adoption.' })
+  @ApiOkResponse({ type: PublicCatDetailDto })
+  @ApiNotFoundResponse({
+    description: 'No available cat exists with this slug',
+  })
+  findOne(@Param('slug') slug: string): Promise<PublicCatDetailDto> {
+    return this.catsService.findPublicBySlug(slug);
   }
 }

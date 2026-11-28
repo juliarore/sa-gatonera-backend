@@ -1,7 +1,11 @@
+import { CatStatus } from '../../modules/cats/enums';
+import { catsSeed } from './cats.seed';
+
 interface CatImageSeed {
   slug: string;
   source: string;
   altText: string;
+  displayOrder: number;
 }
 
 const single = (
@@ -12,6 +16,7 @@ const single = (
   slug,
   source,
   altText: `Fotografia de ${name}`,
+  displayOrder: 1,
 });
 
 const pair = (
@@ -23,9 +28,10 @@ const pair = (
     slug,
     source,
     altText: `Fotografia de ${first[1]} i ${second[1]} junts`,
+    displayOrder: 1,
   }));
 
-export const catImagesSeed: CatImageSeed[] = [
+const coverImages: CatImageSeed[] = [
   ...pair('nala-simba.jpeg', ['nala', 'Nala'], ['simba', 'Simba']),
   ...pair('mario-peach.jpeg', ['mario', 'Mario'], ['peach', 'Peach']),
   ...pair('kael-kira.jpeg', ['kael', 'Kael'], ['kira', 'Kira']),
@@ -44,3 +50,56 @@ export const catImagesSeed: CatImageSeed[] = [
   single('cleo', 'Cleo', 'dana.jpeg'),
   single('toby', 'Toby', 'maia.jpeg'),
 ];
+
+const individualPhotos = [
+  'arya.jpeg',
+  'caramelo.jpeg',
+  'dana.jpeg',
+  'kai.jpeg',
+  'lluna.jpeg',
+  'maia.jpeg',
+  'rayo.jpeg',
+  'shaila.jpeg',
+  'bruna.jpeg',
+];
+
+const photoAt = (position: number) =>
+  individualPhotos[position % individualPhotos.length];
+
+const nextPosition = (start: number, excluded: string[]) => {
+  let position = start;
+  while (excluded.includes(photoAt(position))) {
+    position += 1;
+  }
+  return position;
+};
+
+const availableCats = catsSeed
+  .flatMap(({ slug, name, status }) =>
+    status === CatStatus.AVAILABLE && slug && name ? [{ slug, name }] : [],
+  )
+  .sort((a, b) => (a.slug < b.slug ? -1 : 1));
+
+const extraImages: CatImageSeed[] = availableCats.flatMap(
+  ({ slug, name }, index) => {
+    const cover = coverImages.find((image) => image.slug === slug)?.source;
+    const excluded = cover ? [cover] : [];
+    const step = 1 + Math.floor(index / individualPhotos.length);
+    const first = nextPosition(index + 1, excluded);
+    const second = nextPosition(first + step, [...excluded, photoAt(first)]);
+    const third = nextPosition(second + step, [
+      ...excluded,
+      photoAt(first),
+      photoAt(second),
+    ]);
+
+    return [first, second, third].map((position, extraIndex) => ({
+      slug,
+      source: photoAt(position),
+      altText: `Fotografia de ${name} (${extraIndex + 2})`,
+      displayOrder: extraIndex + 2,
+    }));
+  },
+);
+
+export const catImagesSeed: CatImageSeed[] = [...coverImages, ...extraImages];

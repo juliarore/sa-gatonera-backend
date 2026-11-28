@@ -47,9 +47,19 @@ async function seed() {
     mkdirSync(uploadsDir, { recursive: true });
 
     const catIds = new Map(cats.map((cat) => [cat.slug, cat.id]));
+    const catImagesRepository = dataSource.getRepository(CatImage);
+    const existingImages = await catImagesRepository.find({
+      select: { catId: true, displayOrder: true, imageUrl: true },
+    });
+    const existingUrls = new Map(
+      existingImages.map(({ catId, displayOrder, imageUrl }) => [
+        `${catId}:${displayOrder}`,
+        imageUrl,
+      ]),
+    );
     const catImages: Partial<CatImage>[] = [];
 
-    for (const { slug, source, altText } of catImagesSeed) {
+    for (const { slug, source, altText, displayOrder } of catImagesSeed) {
       const sourcePath = join(process.cwd(), 'seed-images', source);
       const catId = catIds.get(slug);
 
@@ -61,21 +71,28 @@ async function seed() {
         continue;
       }
 
-      const code = createHash('sha1').update(slug).digest('hex').slice(0, 6);
+      const codeSeed = displayOrder === 1 ? slug : `${slug}-${displayOrder}`;
+      const code = createHash('sha1')
+        .update(codeSeed)
+        .digest('hex')
+        .slice(0, 6);
       const fileName = `${slug}-${code}${extname(source)}`;
+      const imageUrl = `/uploads/cats/${fileName}`;
+      const existingUrl = existingUrls.get(`${catId}:${displayOrder}`);
+
+      if (displayOrder > 1 && existingUrl && existingUrl !== imageUrl) {
+        console.warn(
+          `Skipping ${slug} position ${displayOrder}: it already has ${existingUrl}.`,
+        );
+        continue;
+      }
+
       copyFileSync(sourcePath, join(uploadsDir, fileName));
-      catImages.push({
-        catId,
-        displayOrder: 1,
-        imageUrl: `/uploads/cats/${fileName}`,
-        altText,
-      });
+      catImages.push({ catId, displayOrder, imageUrl, altText });
     }
 
     if (catImages.length > 0) {
-      await dataSource
-        .getRepository(CatImage)
-        .upsert(catImages, ['catId', 'displayOrder']);
+      await catImagesRepository.upsert(catImages, ['catId', 'displayOrder']);
     }
 
     const available = catsSeed.filter(

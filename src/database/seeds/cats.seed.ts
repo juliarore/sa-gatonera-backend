@@ -25,7 +25,7 @@ export const catsSeed: Partial<Cat>[] = [
     healthStatus:
       'Sana. Ha rebut la primera desparasitació i la primera dosi de vacuna. Pendent de completar el calendari vacunal.',
     specialNeeds:
-      'Encara necessita menjar humit de cadell 4 vegades al dia i supervisió constant per la seva edat.',
+      'Encara necessita menjar humit de cadell quatre vegades al dia i supervisió constant per la seva edat.',
     birthDate: '2026-09-01',
     birthDateIsEstimated: false,
     vaccinated: false,
@@ -44,11 +44,12 @@ export const catsSeed: Partial<Cat>[] = [
     adoptionGroupId: NALA_SIMBA_ADOPTION_GROUP_ID,
     gender: CatGender.MALE,
     story:
-      "En Simba va néixer a casa d'una família d'acollida i és un cadell petit, atrevit i molt juganer. Ha fet amistat de seguida amb la Nala, amb qui comparteix manta i jocs. Busquem una llar on puguin anar junts.",
+      "En Simba va néixer a casa d'una família d'acollida i és un cadell molt petit: encara pren biberó i dorm gairebé tot el dia. Quan està despert, busca la companyia de la Nala, amb qui comparteix manta. Busquem una llar on puguin anar junts.",
     entryDate: '2026-11-18',
     healthStatus:
       'Sa. Primera desparasitació feta. Pendent de començar el calendari vacunal.',
-    specialNeeds: 'Encara necessita menjar humit de cadell 4 vegades al dia.',
+    specialNeeds:
+      'Necessita biberó de llet per a cadells diverses vegades al dia i un lloc calent i tranquil per dormir.',
     birthDate: '2026-11-11',
     birthDateIsEstimated: false,
     vaccinated: false,
@@ -56,7 +57,7 @@ export const catsSeed: Partial<Cat>[] = [
     compatibleWithCats: Compatibility.YES,
     compatibleWithDogs: Compatibility.UNKNOWN,
     compatibleWithChildren: Compatibility.UNKNOWN,
-    activityLevel: ActivityLevel.HIGH,
+    activityLevel: ActivityLevel.LOW,
     status: CatStatus.AVAILABLE,
     isFeatured: false,
     isUrgent: false,
@@ -67,7 +68,7 @@ export const catsSeed: Partial<Cat>[] = [
     adoptionGroupId: MARIO_PEACH_ADOPTION_GROUP_ID,
     gender: CatGender.MALE,
     story:
-      "En Mario i la Peach van néixer a casa d'una família d'acollida i són inseparables: es renten, juguen i dormen abraçats. En Mario és el més atrevit dels dos, sempre és el primer a explorar una habitació nova. Es porta molt bé amb altres gats. La família que els acull només els pot tenir unes setmanes més, així que necessiten una llar aviat on puguin anar junts.",
+      "En Mario i la Peach van néixer a casa d'una família d'acollida i són inseparables: es renten, juguen i dormen abraçats. En Mario és el més atrevit dels dos: sempre és el primer a explorar una habitació nova. Es porta molt bé amb altres gats. La família que els acull només els pot tenir unes setmanes més, així que necessiten una llar aviat on puguin anar junts.",
     entryDate: '2026-09-15',
     healthStatus:
       'Sa. Vacunat amb el primer protocol i desparasitat. Test de leucèmia i immunodeficiència felina negatiu.',
@@ -90,7 +91,7 @@ export const catsSeed: Partial<Cat>[] = [
     adoptionGroupId: MARIO_PEACH_ADOPTION_GROUP_ID,
     gender: CatGender.FEMALE,
     story:
-      "La Peach és la parella d'en Mario i la part més dolça del duet. És una mica tímida els primers minuts, però quan agafa confiança no para de fer purrs i demanar carícies. Li agrada mirar per la finestra i jugar amb pilotes de paper. La seva família d'acollida només la pot tenir unes setmanes més, així que necessita una llar tranquil·la aviat, junt amb en Mario.",
+      "La Peach és la germana d'en Mario i la part més dolça del duet. És una mica tímida els primers minuts, però quan agafa confiança no para de demanar carícies. Li agrada mirar per la finestra i jugar amb pilotes de paper. La seva família d'acollida només la pot tenir unes setmanes més, així que necessita una llar tranquil·la aviat, junt amb en Mario.",
     entryDate: '2026-09-15',
     healthStatus:
       'Sana. Vacunada amb el primer protocol i desparasitada. Test de leucèmia i immunodeficiència felina negatiu.',
@@ -112,7 +113,7 @@ export const catsSeed: Partial<Cat>[] = [
     slug: 'lluna',
     gender: CatGender.FEMALE,
     story:
-      "La Lluna es va recuperar d'una infecció respiratòria i ara viu temporalment amb una família d'acollida mentre espera la seva llar definitiva. És curiosa, afectuosa i una mica independent. Va molt bé amb altres gats, però encara estem coneixent com reacciona amb gossos i nens.",
+      "La Lluna es va recuperar d'una infecció respiratòria i ara viu temporalment amb una família d'acollida mentre espera la seva llar definitiva. És curiosa, afectuosa i una mica independent. Es porta molt bé amb altres gats, però encara estem coneixent com reacciona amb gossos i nens.",
     entryDate: '2026-08-22',
     healthStatus:
       'Recuperada de la infecció respiratòria. Vacunada, desparasitada i esterilitzada.',
@@ -134,7 +135,7 @@ export const catsSeed: Partial<Cat>[] = [
     slug: 'kai',
     gender: CatGender.MALE,
     story:
-      'En Kai és un gat adult molt assossegat que va arribar quan la seva antiga cuidadora no va poder continuar atenent-lo. Passa les hores al sofà, adora la companyia i conviu sense problemes amb altres gats, gossos i criatures. És el company perfecte per a una llar tranquil·la on algú el vulgui acompanyar a la migdiada.',
+      'En Kai és un gat adult molt assossegat que va arribar quan la seva antiga cuidadora no va poder continuar atenent-lo. Passa les hores al sofà, adora la companyia i conviu sense problemes amb altres gats, gossos i nens petits. És el company perfecte per a una llar tranquil·la on algú el vulgui acompanyar a la migdiada.',
     entryDate: '2026-07-10',
     healthStatus:
       'Sa en general. Vacunat, desparasitat i esterilitzat. Revisió veterinària al dia.',
@@ -157,7 +158,7 @@ export const catsSeed: Partial<Cat>[] = [
     slug: 'rayo',
     gender: CatGender.MALE,
     story:
-      "En Rayo va arribar a la gatonera després d'aparèixer al jardí d'un veí, amb ganes de menjar i de mimos. És un gat adult, actiu i molt afectuós, i es porta molt bé amb les criatures. Fa mesos que espera i li costa conviure amb altres gats, així que necessita trobar aviat una llar on sigui l'únic gat.",
+      "En Rayo va arribar a Sa Gatonera després d'aparèixer al jardí d'un veí, amb ganes de menjar i de carícies. És un gat adult, actiu i molt afectuós, i es porta molt bé amb nens petits. Fa mesos que espera i li costa conviure amb altres gats, així que necessita trobar aviat una llar on sigui l'únic gat.",
     entryDate: '2026-06-05',
     healthStatus:
       'Sa. Vacunat, desparasitat i esterilitzat. Revisió veterinària al dia.',
@@ -221,7 +222,7 @@ export const catsSeed: Partial<Cat>[] = [
     slug: 'caramelo',
     gender: CatGender.MALE,
     story:
-      'En Caramelo és un gat jove de pelatge taronja, molt afectuós, que va néixer en una colònia del barri i va ser recollit pels voluntaris. Adora jugar amb qualsevol cosa i demanar mimos. Es porta bé amb gossos i amb criatures.',
+      'En Caramelo és un gat jove de pelatge taronja, molt afectuós, que va néixer en una colònia del barri i va ser recollit pels voluntaris. Adora jugar amb qualsevol cosa i demanar carícies. Es porta bé amb gossos i amb nens petits.',
     entryDate: '2026-07-28',
     healthStatus: 'Sa. Vacunat i desparasitat.',
     specialNeeds: null,
@@ -265,7 +266,7 @@ export const catsSeed: Partial<Cat>[] = [
     slug: 'maia',
     gender: CatGender.FEMALE,
     story:
-      'La Maia és una cadella dolça i tranquil·la que va arribar amb tota la ventrada. Les seves germanes ja han estat adoptades i ella espera la seva oportunitat. Li agrada dormir en braços i mirar el món des de la finestra.',
+      'La Maia és una cadella dolça i tranquil·la que va arribar amb tota la ventrada. Les seves germanes ja han estat adoptades i ella espera la seva oportunitat. Li agrada dormir a la falda i mirar el món des de la finestra.',
     entryDate: '2026-08-30',
     healthStatus: 'Sana. Vacunada amb el primer protocol i desparasitada.',
     specialNeeds: null,
@@ -287,7 +288,7 @@ export const catsSeed: Partial<Cat>[] = [
     adoptionGroupId: KAEL_KIRA_ADOPTION_GROUP_ID,
     gender: CatGender.MALE,
     story:
-      "En Kael i la Kira són germans, van néixer en una casa d'acollida i han crescut sempre junts: dormen abraçats i es renten l'un a l'altre. En Kael, de pelatge negre, és el més entremaliat i sempre inventa jocs nous. La família d'acollida es muda aviat, així que necessiten una llar ben d'hora, i només es poden adoptar junts.",
+      "En Kael i la Kira són germans, van néixer en una casa d'acollida i han crescut sempre junts: dormen abraçats i es renten l'un a l'altre. En Kael, de pelatge negre, és el més entremaliat i sempre inventa jocs nous. La família d'acollida es muda aviat, així que necessiten una llar ben aviat, i només es poden adoptar junts.",
     entryDate: '2026-08-12',
     healthStatus: 'Sa. Vacunat amb el primer protocol i desparasitat.',
     specialNeeds: null,
@@ -331,7 +332,7 @@ export const catsSeed: Partial<Cat>[] = [
     adoptionGroupId: LEIA_NEO_ADOPTION_GROUP_ID,
     gender: CatGender.FEMALE,
     story:
-      "La Leia i en Neo van arribar junts d'una casa on ja no els podien atendre. Ella és dòcil i sociable, i li encanta que li facin pessigolles a la panxa. Vénen junts i necessiten una llar que els adopti als dos.",
+      "La Leia i en Neo són germans i van arribar junts d'una casa on ja no els podien atendre. Ella és dòcil i sociable, i li encanta que li facin pessigolles a la panxa. Vénen junts i necessiten una llar que els adopti tots dos.",
     entryDate: '2026-05-14',
     healthStatus: 'Sana. Vacunada, desparasitada i esterilitzada.',
     specialNeeds: null,
@@ -375,7 +376,7 @@ export const catsSeed: Partial<Cat>[] = [
     adoptionGroupId: MIMI_BLACKY_ADOPTION_GROUP_ID,
     gender: CatGender.FEMALE,
     story:
-      "La Mimi i en Blacky són dos cadells negres rescatats junts d'un celler. Ella és juganera i molt xerraire, i no deixa de seguir en Blacky per tot arreu. Vénen junts i els busquem una família que els vulgui als dos.",
+      "La Mimi i en Blacky són dos cadells negres rescatats junts d'un celler. Ella és juganera i molt xerraire, i no deixa de seguir en Blacky per tot arreu. Vénen junts i els busquem una família que els vulgui tots dos.",
     entryDate: '2026-04-20',
     healthStatus: "Sana. Vacunada i desparasitada. Pendent d'esterilitzar.",
     specialNeeds: null,
